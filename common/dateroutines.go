@@ -25,7 +25,20 @@ func CalcSearchYYYYMMFromDate(month string) string {
 
 }
 
+func GetFormattedDateToday() string {
+
+	dateToday := time.Now().String()
+	dateToday = string(dateToday[0:4]) + string(dateToday[5:7]) + string(dateToday[8:10])
+
+	return dateToday
+
+
+}
+
 func convertShortDate(inDate string) string {
+
+	//Dates coming in take the form Jan 20, 2020 00:00:00
+	//so just need to convert the initial month characters
 
 	inDate = strings.Replace(inDate, "Jan ", "January ", 1)
 	inDate = strings.Replace(inDate, "Feb ", "February ", 1)

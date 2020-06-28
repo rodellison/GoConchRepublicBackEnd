@@ -4,24 +4,21 @@ import (
 	"errors"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
+	"os"
 	"strings"
 )
 
 type Eventdata struct {
-	EventID          string `json:"eventid"`
-	EventStartDate   string `json:"eventstartdate"`
-	EventEndDate     string `json:"eventenddate"`
-	EventName        string `json:"eventname"`
-	EventContact     string `json:"eventcontact"`
-	EventLocation    string `json:"eventlocation"`
-	EventImgURL      string `json:"eventimgurl"`
-	EventURL         string `json:"eventurl"`
-	EventDescription string `json:"eventdescription"`
+	EventID          string `json:"EventID"`
+	StartDate        string `json:"StartDate"`
+	EndDate          string `json:"EndDate"`
+	EventName        string `json:"EventName"`
+	EventContact     string `json:"EventContact"`
+	EventLocation    string `json:"EventLocation"`
+	ImgURL           string `json:"ImgURL"`
+	EventURL         string `json:"EventURL"`
+	EventDescription string `json:"EventDescription"`
 }
-
-//ToDo: set URLBASE as a Env value
-const URLBASE = "https://fla-keys.com"
-const URLBASE2 = "/calendar/all/florida-keys/"
 
 //These constants are for HTML parsing
 const LISTING_BLOCK = ".listing-block.listing-calendar"
@@ -32,7 +29,6 @@ const LISTING_LOCATION = ".listing-location"
 const LISTING_DATE = ".listing-date"
 const LISTING_NAME = ".listing-name"
 const LISTING_PHONE = ".listing-phone"
-
 
 func (ed *Eventdata) ExtractEventData(i int, s *goquery.Selection) (err error) {
 	// Load the HTML document
@@ -51,11 +47,11 @@ func (ed *Eventdata) ExtractEventData(i int, s *goquery.Selection) (err error) {
 			return errors.New("could not format Event dates")
 		} else {
 			if startDate == endDate {
-				ed.EventStartDate = startDate
-				ed.EventEndDate = startDate
+				ed.StartDate = startDate
+				ed.EndDate = startDate
 			} else {
-				ed.EventStartDate = startDate
-				ed.EventEndDate = endDate
+				ed.StartDate = startDate
+				ed.EndDate = endDate
 			}
 		}
 	} else {
@@ -80,7 +76,7 @@ func (ed *Eventdata) ExtractEventData(i int, s *goquery.Selection) (err error) {
 
 	iQuery = s.Find(LISTING_IMG)
 	if iQuery.Nodes != nil {
-		ed.EventImgURL = URLBASE +iQuery.Nodes[0].Attr[1].Val
+		ed.ImgURL = os.Getenv("URLBASE") + iQuery.Nodes[0].Attr[1].Val
 	}
 
 	iQuery = s.Find(LISTING_LOCATION)

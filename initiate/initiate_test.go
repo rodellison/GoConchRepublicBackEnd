@@ -16,9 +16,9 @@ func init() {
 	common.EBSvcClient = &mocks.MockEBSvcClient{}
 }
 
-func TestHandler(t *testing.T) {
+func TestInitiateHandler(t *testing.T) {
 
-	expectedResult := "{\"message\":\"ConchRepublicBackend Initiate responding successfully!\"}"
+	expectedResult := "{\"message\":\"ConchRepublicBackend initiate responding successfully!\"}"
 
 	tests := []struct {
 		request context.Context

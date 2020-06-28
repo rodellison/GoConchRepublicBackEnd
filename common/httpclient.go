@@ -14,11 +14,13 @@ import (
 //And setup an init() function that sets the variable to the 'real' interface as it's default when not testing
 
 type HTTPClient interface {
-	Do (req *http.Request) (*http.Response, error)
+	Do(req *http.Request) (*http.Response, error)
 }
+
 var (
 	TheHTTPClient HTTPClient
 )
+
 func init() {
 	//IF we're running a test, we'll swap this variable's value to use a mock instead, but when not
 	//testing, the value will be preset to ensure that it uses the 'real' httpClient interface

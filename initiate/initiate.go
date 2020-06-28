@@ -17,7 +17,6 @@ const eventbusStr = "conchrepublic"
 const sourceStr = "conchrepublicbackend.initiate"
 const detailTypeStr = "conchrepublicbackend.fetch"
 
-
 // AWS Lambda Proxy Request functionality (default behavior)
 // https://serverless.com/framework/docs/providers/aws/events/apigateway/#lambda-proxy-integration
 type Response events.APIGatewayProxyResponse
@@ -31,13 +30,6 @@ func Handler(ctx context.Context) (Response, error) {
 		//If context info is needed to be used, uncomment next line and do something in the function
 		//contextHandler(&ctx)
 	}
-
-	////Get Session, credentials
-	//sess := session.Must(session.NewSessionWithOptions(session.Options{
-	//	SharedConfigState: session.SharedConfigEnable,
-	//}))
-	//// Create the eventbridge events service client, to be used for putting events
-	//svc := eventbridge.New(sess)
 
 	fmt.Println("ConchRepublic Initiate begin sending events..")
 	//This creates 12 events, one for each month
@@ -57,7 +49,7 @@ func Handler(ctx context.Context) (Response, error) {
 
 	}
 
-	fmt.Println("ConchRepublic Initiate send events completed.")
+	fmt.Println("ConchRepublic initiate send events completed.")
 	return responseHandler()
 }
 
@@ -69,7 +61,7 @@ func contextHandler(ctx *context.Context) {
 func responseHandler() (Response, error) {
 
 	body, err := json.Marshal(map[string]interface{}{
-		"message": "ConchRepublicBackend Initiate responding successfully!",
+		"message": "ConchRepublicBackend initiate responding successfully!",
 	})
 	if err != nil {
 		return Response{StatusCode: 404}, err

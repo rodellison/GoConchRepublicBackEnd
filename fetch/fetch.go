@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-lambda-go/lambdacontext"
 	"github.com/rodellison/GoConchRepublicBackEnd/common"
 	"log"
+	"os"
 )
 
 const eventbusStr = "conchrepublic"
@@ -39,40 +40,30 @@ func Handler(ctx context.Context, theEvent *events.CloudWatchEvent) (Response, e
 	}
 	fmt.Println("Event detail:", thisEventsDetail.Month)
 
-	//for now just allow month 1 to pass, and have months 2-12 just pass through (so as to not spam the Florida Keys site)
-	if thisEventsDetail.Month == "1" {
-		// Channels
-		//	chUrls := make(chan string)
-		chFinished := make(chan bool)
-		defer func() {
-			close(chFinished)
-		}()
+	chFinished := make(chan bool)
+	defer func() {
+		close(chFinished)
+	}()
 
-		go fetch(thisEventsDetail.Month, chFinished)
+	go fetch(thisEventsDetail.Month, chFinished)
 
-		// Subscribe to both channels
-		select {
-		case value := <-chFinished:
-			//Its possible that the fetch of data or extraction of data fetched did not occur successfully
-			if value != true {
-				fmt.Println("Returned from Notification Channel with Error")
-				return responseHandler(false)
-			} else {
-				fmt.Println("Returned from Notification Channel")
-				return responseHandler(true)
-			}
+	// Subscribe to both channels
+	select {
+	case value := <-chFinished:
+		//Its possible that the fetch of data or extraction of data fetched did not occur successfully
+		if value != true {
+			fmt.Println("Returned from Notification Channel with Error")
+			return responseHandler(false)
+		} else {
+			fmt.Println("Returned from Notification Channel")
+			return responseHandler(true)
 		}
-	} else {
-		fmt.Println("Mimic Returned from Notification Channel")
-		return responseHandler(true)
-
 	}
-
 }
 
 func fetch(month string, chFinished chan bool) {
 
-	fullURL := common.URLBASE + common.URLBASE2 + common.CalcSearchYYYYMMFromDate(month)
+	fullURL := os.Getenv("URLBASE") + os.Getenv("URLBASE2") + common.CalcSearchYYYYMMFromDate(month)
 	fmt.Println(fullURL)
 	//Use this to provide a return value to pass back through the channel once this routine is finished.
 	//Default it to True, and return false only if any critical errors occur that should not allow us to proceed
@@ -121,9 +112,7 @@ func fetch(month string, chFinished chan bool) {
 						//For this modules case, dont fatal out on error, just move along
 						fmt.Println(err.Error())
 					}
-
 				}
-
 
 			}
 		})
@@ -134,9 +123,9 @@ func responseHandler(success bool) (Response, error) {
 
 	var returnString string
 	if success {
-		returnString = "ConchRepublicBackend Fetch responding successful!"
+		returnString = "ConchRepublicBackend fetch responding successful!"
 	} else {
-		returnString = "ConchRepublicBackend Fetch responding UNsuccessful!"
+		returnString = "ConchRepublicBackend fetch responding UNsuccessful!"
 	}
 
 	body, err := json.Marshal(map[string]interface{}{

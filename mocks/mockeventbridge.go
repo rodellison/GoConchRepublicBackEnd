@@ -14,8 +14,7 @@ var (
 )
 
 //This is the mocked version of the real function
-//It returns the variable above, which is a function that can be overloaded in our test functions
-func (m *MockEBSvcClient) PutEvents(input *eventbridge.PutEventsInput) (*eventbridge.PutEventsOutput, error){
+//It returns the variable above, which is a function that can be overloaded in our test routines
+func (m *MockEBSvcClient) PutEvents(input *eventbridge.PutEventsInput) (*eventbridge.PutEventsOutput, error) {
 	return MockDoPutEvent(input)
 }
-

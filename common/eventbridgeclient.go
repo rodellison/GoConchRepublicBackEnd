@@ -26,7 +26,6 @@ func init() {
 
 // func sendEvent uses an SDK service client to make a request to Amazon EventBridge.
 func SendEBEvent(eventbusStr, sourceStr, detailTypeStr, detailStr string) (err error) {
-	// Make  request
 	fmt.Println("Sending Event with detailStr:", detailStr)
 	_, err = EBSvcClient.PutEvents(&eventbridge.PutEventsInput{
 		Entries: []*eventbridge.PutEventsRequestEntry{

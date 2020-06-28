@@ -53,8 +53,6 @@ var (
 		"</div> " +
 		"</body>" +
 		"</html>"
-
-
 )
 
 func init() {
@@ -65,10 +63,9 @@ func init() {
 
 }
 
-
 func TestHandlerCanProcessGoodRequest(t *testing.T) {
 
-	expectedResult := "{\"message\":\"ConchRepublicBackend Fetch responding successful!\"}"
+	expectedResult := "{\"message\":\"ConchRepublicBackend fetch responding successful!\"}"
 
 	tests := []struct {
 		request context.Context
@@ -100,12 +97,11 @@ func TestHandlerCanProcessGoodRequest(t *testing.T) {
 	}
 
 	var testEvent = events.CloudWatchEvent{
-		DetailType: "conchrepublicbackend_fetch",
+		DetailType: "conchrepublicbackend.fetch",
 		Source:     "goconchrepublicbackend.initiate",
 		Time:       time.Now(),
 		Detail:     []byte(`{ "month": "1" }`),
 	}
-
 
 	for _, test := range tests {
 		response, err := Handler(test.request, &testEvent)
@@ -114,10 +110,9 @@ func TestHandlerCanProcessGoodRequest(t *testing.T) {
 	}
 }
 
-
 func TestHandlerCanProcessBadRequest(t *testing.T) {
 
-	expectedResult := "{\"message\":\"ConchRepublicBackend Fetch responding UNsuccessful!\"}"
+	expectedResult := "{\"message\":\"ConchRepublicBackend fetch responding UNsuccessful!\"}"
 
 	tests := []struct {
 		request context.Context
@@ -137,7 +132,7 @@ func TestHandlerCanProcessBadRequest(t *testing.T) {
 		//Placing the NopCloser inside as EACH time the GetDoFunc is called the reader will be 'drained'
 		r := ioutil.NopCloser(bytes.NewReader([]byte("")))
 		return &http.Response{
-			StatusCode: 500,   //for this test, just using a bad return code to signify http get error
+			StatusCode: 500, //for this test, just using a bad return code to signify http get error
 			Body:       r,
 		}, nil
 	}
@@ -148,12 +143,11 @@ func TestHandlerCanProcessBadRequest(t *testing.T) {
 	}
 
 	var testEvent = events.CloudWatchEvent{
-		DetailType: "conchrepublicbackend_fetch",
+		DetailType: "conchrepublicbackend.fetch",
 		Source:     "goconchrepublicbackend.initiate",
 		Time:       time.Now(),
 		Detail:     []byte(`{ "month": "1" }`),
 	}
-
 
 	for _, test := range tests {
 		response, err := Handler(test.request, &testEvent)
