@@ -37,7 +37,8 @@ func init() {
 
 }
 
-// func sendEvent uses an SDK service client to make a request to Amazon EventBridge.
+
+// func InsertDBEvent converts Eventdata into appropriate DynamoDB table attributes, and puts the item into the DB.
 func InsertDBEvent(data Eventdata) (err error) {
 
 	//First, Marshal the incoming EventItem JSON string data into a DynamoDB attribute map
@@ -63,7 +64,7 @@ func InsertDBEvent(data Eventdata) (err error) {
 
 }
 
-// func sendEvent uses an SDK service client to make a request to Amazon EventBridge.
+// func DeleteDBEvents gets EventIDs that are obsolete, and purges them from the DynamoDB table.
 func DeleteDBEvents(endDate string) (countPurged int64, err error) {
 
 	fmt.Println("Attempting to purge old events with endDate prior to: ", endDate)
@@ -103,6 +104,8 @@ func DeleteDBEvents(endDate string) (countPurged int64, err error) {
 
 }
 
+//func getEventIDsForOldEvents takes an input endData (of form 20200101), and scans for items in the DynamoDB table
+//where the Event EndData is prior to the input and returns this collection .
 func getEventIDsForOldEvents(endDate string) (returnItems *dynamodb.ScanOutput, err error) {
 
 	// Create the Expression to fill the scan input struct with.

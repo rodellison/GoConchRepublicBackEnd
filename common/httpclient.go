@@ -27,7 +27,7 @@ func init() {
 	TheHTTPClient = &http.Client{}
 }
 
-//Post sends a post request to the URL with the body
+//func GetURL fetches raw HTML data from the input url.. essentially a screen-scrape
 func GetURL(url string) (*http.Response, error) {
 	//Empty body for now
 	jsonBytes, err := json.Marshal("")
