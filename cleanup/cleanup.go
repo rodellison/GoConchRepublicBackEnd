@@ -10,14 +10,16 @@ import (
 	"github.com/aws/aws-lambda-go/lambdacontext"
 	"github.com/rodellison/GoConchRepublicBackEnd/common"
 	"log"
+	"os"
 )
 
 var (
 	StrFormattedDateToday string
 )
+
 func init() {
 
-	StrFormattedDateToday = common.GetFormattedDateToday();
+	StrFormattedDateToday = common.GetFormattedDateToday()
 
 }
 
@@ -37,11 +39,18 @@ func Handler(ctx context.Context) (Response, error) {
 	}
 
 	fmt.Println("ConchRepublic Cleanup begin database purge")
-
+	var successMessage string
 	if count, err := common.DeleteDBEvents(StrFormattedDateToday); err != nil {
 		success = false
+		successMessage = "ConchRepublic Cleanup did NOT complete successfully."
 	} else {
-		fmt.Println(fmt.Sprintf("ConchRepublic Cleanup complete. Counts: Total purged: %d",  count))
+		successMessage = fmt.Sprintf("ConchRepublic Cleanup complete. Counts: Total purged: %d", count)
+		fmt.Println(successMessage)
+
+		//Send an SNS message reporting results
+		if err := common.PublishSNSMessage(os.Getenv("SNS_TOPIC"), "Conch Republic Cleanup", successMessage); err != nil {
+			fmt.Println("Error sending SNS message: ", err.Error())
+		}
 	}
 
 	return responseHandler(success)

@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-lambda-go/lambdacontext"
 	"github.com/rodellison/GoConchRepublicBackEnd/common"
 	"log"
+	"os"
 	"time"
 )
 
@@ -48,8 +49,12 @@ func Handler(ctx context.Context) (Response, error) {
 		time.Sleep(100 * time.Millisecond)
 
 	}
-
 	fmt.Println("ConchRepublic initiate send events completed.")
+
+	if err := common.PublishSNSMessage(os.Getenv("SNS_TOPIC"), "Conch Republic Initiate", "Conch Republic Backend process initiated."); err != nil {
+		fmt.Println("Error sending SNS message: ", err.Error())
+	}
+
 	return responseHandler()
 }
 

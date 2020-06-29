@@ -32,7 +32,6 @@ func GetFormattedDateToday() string {
 
 	return dateToday
 
-
 }
 
 func convertShortDate(inDate string) string {

@@ -53,10 +53,8 @@ provider:
 #        - "logs:CreateLogGroup"
 #        - "logs:PutLogEvents"
 
-
 # you can define service wide environment variables here
-#  environment:
-#    variable1: value1
+#environment:
 
 package:
   exclude:
@@ -67,45 +65,28 @@ package:
 functions:
   initiate:
     handler: bin/initiate
+    # Function level environment variables
+    environment:
+      SNS_TOPIC: "arn:aws:sns:us-east-1:619676567607:FloridaKeysTableUpdate"
     events:
       - http:
           path: initiate
           method: get
       - eventBridge:
           # You can have a separate eventBus (instead of Default) if needed
-#          eventBus: 'arn:aws:events:us-east-1:619676567607:event-bus/conchrepublic'
+          # eventBus: 'arn:aws:events:us-east-1:619676567607:event-bus/conchrepublic'
           # To have eventBridge run this function according to a schedule, or be cron kicked off, use rate or cron
           #see https://docs.aws.amazon.com/eventbridge/latest/userguide/scheduled-events.html#cron-expressions
           #schedule: rate(5 minutes)
           #NOTE!! schedule ONLY works as a rule on the default event bus
-          #NOTE!! cron time uses UTC time, which may be different than your time, so adjust HOURS parm accordingly
+          #NOTE!! cron time uses UTC time, which may be different than your time, so adjust HOUR parm accordingly
           #so job kicks off at the right time (local time)
           schedule: cron(0 13 ? * SUN *)
 
-
-
-  cleanup:
-    handler: bin/cleanup
-    environment: # Function level environment variables
-      DYNAMO_DB_TABLENAME: "FloridaKeysEventsTest"
-    events:
-      - http:
-          path: cleanup
-          method: get
-      - eventBridge:
-          # You can have a separate eventBus (instead of Default) if needed
-          #          eventBus: 'arn:aws:events:us-east-1:619676567607:event-bus/conchrepublic'
-          # To have eventBridge run this function according to a schedule, or be cron kicked off, use rate or cron
-          #see https://docs.aws.amazon.com/eventbridge/latest/userguide/scheduled-events.html#cron-expressions
-          #schedule: rate(5 minutes)
-          #NOTE!! schedule ONLY works as a rule on the default event bus
-          #NOTE!! cron time uses UTC time, which may be different than your time, so adjust HOURS parm accordingly
-          #so job kicks off at the right time (local time)
-          schedule: cron(15 13 ? * SUN *)
-
   fetch:
     handler: bin/fetch
-    environment: # Function level environment variables
+    # Function level environment variables
+    environment:
       URLBASE: "https://fla-keys.com"
       URLBASE2: "/calendar/all/florida-keys/"
     events:
@@ -120,6 +101,28 @@ functions:
 
   database:
     handler: bin/database
-    environment: # Function level environment variables
+    # Function level environment variables
+    environment:
       DYNAMO_DB_TABLENAME: "FloridaKeysEventsTest"
+
+  cleanup:
+    handler: bin/cleanup
+    environment:
+      SNS_TOPIC: "arn:aws:sns:us-east-1:619676567607:FloridaKeysTableUpdate"
+      DYNAMO_DB_TABLENAME: "FloridaKeysEventsTest"
+    events:
+      - http:
+          path: cleanup
+          method: get
+      - eventBridge:
+          # You can have a separate eventBus (instead of Default) if needed
+          #          eventBus: 'arn:aws:events:us-east-1:619676567607:event-bus/conchrepublic'
+          # To have eventBridge run this function according to a schedule, or be cron kicked off, use rate or cron
+          #see https://docs.aws.amazon.com/eventbridge/latest/userguide/scheduled-events.html#cron-expressions
+          #schedule: rate(5 minutes)
+          #NOTE!! schedule ONLY works as a rule on the default event bus
+          #NOTE!! cron time uses UTC time, which may be different than your time, so adjust HOUR parm accordingly
+          #so job kicks off at the right time (local time)
+          schedule: cron(15 13 ? * SUN *)
+
 

@@ -72,6 +72,8 @@ func (ed *Eventdata) ExtractEventData(i int, s *goquery.Selection) (err error) {
 	iQuery = s.Find(LISTING_PHONE)
 	if iQuery.Nodes != nil {
 		ed.EventContact = iQuery.Nodes[0].LastChild.Data
+	} else {
+		ed.EventContact = "No contact phone provided"
 	}
 
 	iQuery = s.Find(LISTING_IMG)

@@ -37,7 +37,6 @@ func init() {
 
 }
 
-
 // func InsertDBEvent converts Eventdata into appropriate DynamoDB table attributes, and puts the item into the DB.
 func InsertDBEvent(data Eventdata) (err error) {
 
