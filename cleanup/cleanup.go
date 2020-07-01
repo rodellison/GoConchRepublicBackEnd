@@ -7,9 +7,7 @@ import (
 	"fmt"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-lambda-go/lambdacontext"
 	"github.com/rodellison/GoConchRepublicBackEnd/common"
-	"log"
 	"os"
 )
 
@@ -33,11 +31,6 @@ func Handler(ctx context.Context) (Response, error) {
 	fmt.Println("ConchRepublic Cleanup invoked")
 	success := true
 
-	if ctx != nil {
-		//If context info is needed to be used, uncomment next line and do something in the function
-		//contextHandler(&ctx)
-	}
-
 	fmt.Println("ConchRepublic Cleanup begin database purge")
 	var successMessage string
 	if count, err := common.DeleteDBEvents(StrFormattedDateToday); err != nil {
@@ -50,16 +43,12 @@ func Handler(ctx context.Context) (Response, error) {
 		//Send an SNS message reporting results
 		if err := common.PublishSNSMessage(os.Getenv("SNS_TOPIC"), "Conch Republic Cleanup", successMessage); err != nil {
 			fmt.Println("Error sending SNS message: ", err.Error())
+			success = false
 		}
 	}
 
 	return responseHandler(success)
 
-}
-
-func contextHandler(ctx *context.Context) {
-	lc, _ := lambdacontext.FromContext(*ctx)
-	log.Print(lc)
 }
 
 func responseHandler(success bool) (Response, error) {

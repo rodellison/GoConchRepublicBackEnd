@@ -7,9 +7,7 @@ import (
 	"fmt"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-lambda-go/lambdacontext"
 	"github.com/rodellison/GoConchRepublicBackEnd/common"
-	"log"
 	"os"
 	"time"
 )
@@ -27,11 +25,6 @@ func Handler(ctx context.Context) (Response, error) {
 
 	fmt.Println("ConchRepublic Initiate invoked")
 
-	if ctx != nil {
-		//If context info is needed to be used, uncomment next line and do something in the function
-		//contextHandler(&ctx)
-	}
-
 	fmt.Println("ConchRepublic Initiate begin sending events..")
 	//This creates 12 events, one for each month
 	//If there are ANY failures sending events, then return false from this function and get out, otherwise return true
@@ -40,7 +33,7 @@ func Handler(ctx context.Context) (Response, error) {
 
 		//Call the sendEvents function and handle error if it occurs
 		if err := common.SendEBEvent(eventbusStr, sourceStr, detailTypeStr, detailStr); err != nil {
-			return Response{StatusCode: 404}, err
+			return responseHandler(false)
 		}
 
 		//NOTE: Sleep is being called here only to act as a throttler, to limit the number of lambda instances
@@ -53,20 +46,25 @@ func Handler(ctx context.Context) (Response, error) {
 
 	if err := common.PublishSNSMessage(os.Getenv("SNS_TOPIC"), "Conch Republic Initiate", "Conch Republic Backend process initiated."); err != nil {
 		fmt.Println("Error sending SNS message: ", err.Error())
+		return responseHandler(false)
 	}
 
-	return responseHandler()
+	return responseHandler(true)
 }
 
-func contextHandler(ctx *context.Context) {
-	lc, _ := lambdacontext.FromContext(*ctx)
-	log.Print(lc)
-}
 
-func responseHandler() (Response, error) {
+func responseHandler(success bool) (Response, error) {
+
+	var returnString string
+	if success {
+		returnString = "ConchRepublicBackend initiate responding successful!"
+	} else {
+		returnString = "ConchRepublicBackend initiate responding UNsuccessful!"
+	}
+
 
 	body, err := json.Marshal(map[string]interface{}{
-		"message": "ConchRepublicBackend initiate responding successfully!",
+		"message": returnString,
 	})
 	if err != nil {
 		return Response{StatusCode: 404}, err
@@ -81,7 +79,7 @@ func responseHandler() (Response, error) {
 		Body:            buf.String(),
 		Headers: map[string]string{
 			"Content-Type":           "application/json",
-			"X-MyCompany-Func-Reply": "fetch-handler",
+			"X-MyCompany-Func-Reply": "initiate-handler",
 		},
 	}
 

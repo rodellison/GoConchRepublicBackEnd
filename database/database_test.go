@@ -65,3 +65,69 @@ func TestHandlerCanInsertDynamoDBRequest(t *testing.T) {
 	}
 
 }
+
+func TestHandlerHandlesBadInsertDynamoDBRequest(t *testing.T) {
+
+	expectedResult := "{\"message\":\"ConchRepublicBackend database responding UNsuccessful!\"}"
+
+	tests := []struct {
+		request context.Context
+		expect  string
+		err     error
+	}{
+		{
+			request: nil,
+			expect:  expectedResult,
+			err:     nil,
+		},
+	}
+
+	evdata := []byte(`{  }`)
+
+	var testEvent = events.CloudWatchEvent{
+		DetailType: "conchrepublicbackend.database",
+		Source:     "goconchrepublicbackend.fetch",
+		Time:       time.Now(),
+		Detail:     evdata,
+	}
+
+	for _, test := range tests {
+		response, err := Handler(test.request, &testEvent)
+		assert.IsType(t, test.err, err)
+		assert.Equal(t, test.expect, response.Body)
+	}
+
+}
+
+func TestHandlerBadEventdataMarshal(t *testing.T) {
+
+	expectedResult := "{\"message\":\"ConchRepublicBackend database responding UNsuccessful!\"}"
+
+	tests := []struct {
+		request context.Context
+		expect  string
+		err     error
+	}{
+		{
+			request: nil,
+			expect:  expectedResult,
+			err:     nil,
+		},
+	}
+
+	evdata := []byte(``)
+
+	var testEvent = events.CloudWatchEvent{
+		DetailType: "conchrepublicbackend.database",
+		Source:     "goconchrepublicbackend.fetch",
+		Time:       time.Now(),
+		Detail:     evdata,
+	}
+
+	for _, test := range tests {
+		response, err := Handler(test.request, &testEvent)
+		assert.IsType(t, test.err, err)
+		assert.Equal(t, test.expect, response.Body)
+	}
+
+}

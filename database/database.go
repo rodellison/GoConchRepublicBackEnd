@@ -7,9 +7,7 @@ import (
 	"fmt"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-lambda-go/lambdacontext"
 	"github.com/rodellison/GoConchRepublicBackEnd/common"
-	"log"
 )
 
 type Response events.APIGatewayProxyResponse
@@ -18,10 +16,6 @@ func Handler(ctx context.Context, theEvent *events.CloudWatchEvent) (Response, e
 
 	fmt.Println("ConchRepublic Database invoked ")
 	success := true
-	if ctx != nil {
-		//If context info is needed to be used, uncomment next line and do something in the function
-		//contextHandler(&ctx)
-	}
 
 	//Unmarshal the incoming JSON Event detail attribute contents into an Eventdata struct
 	var inInterface common.Eventdata
@@ -42,7 +36,7 @@ func Handler(ctx context.Context, theEvent *events.CloudWatchEvent) (Response, e
 
 }
 
-func responseHandler(success bool) (Response, error) {
+func  responseHandler(success bool) (Response, error) {
 
 	var returnString string
 	if success {
@@ -72,11 +66,6 @@ func responseHandler(success bool) (Response, error) {
 	}
 
 	return resp, nil
-}
-
-func contextHandler(ctx *context.Context) {
-	lc, _ := lambdacontext.FromContext(*ctx)
-	log.Print(lc)
 }
 
 func main() {

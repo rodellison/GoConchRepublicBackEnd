@@ -18,7 +18,7 @@ clean:
 	rm -rf ./bin ./vendor Gopkg.lock
 
 test: clean buildForOSX
-	go test ./...
+	go test -covermode count -coverprofile cover.out ./...
 
 deploy: clean buildForAWS
 	sls deploy --verbose

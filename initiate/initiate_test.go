@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go/service/eventbridge"
 	"github.com/aws/aws-sdk-go/service/sns"
@@ -18,9 +19,9 @@ func init() {
 	common.SNSSvcClient = &mocks.MockSNSSvcClient{}
 }
 
-func TestInitiateHandler(t *testing.T) {
+func TestInitiateHandlerSuccess(t *testing.T) {
 
-	expectedResult := "{\"message\":\"ConchRepublicBackend initiate responding successfully!\"}"
+	expectedResult := "{\"message\":\"ConchRepublicBackend initiate responding successful!\"}"
 
 	tests := []struct {
 		request context.Context
@@ -43,6 +44,74 @@ func TestInitiateHandler(t *testing.T) {
 	mocks.MockDoPublishEvent = func(input *sns.PublishInput) (*sns.PublishOutput, error) {
 		fmt.Println("Mock SNS Publish called")
 		return &sns.PublishOutput{}, nil
+	}
+
+	for _, test := range tests {
+		response, err := Handler(test.request)
+		assert.IsType(t, test.err, err)
+		assert.Equal(t, test.expect, response.Body)
+	}
+}
+
+func TestInitiateHandlerEventPubFail(t *testing.T) {
+
+	expectedResult := "{\"message\":\"ConchRepublicBackend initiate responding UNsuccessful!\"}"
+
+	tests := []struct {
+		request context.Context
+		expect  string
+		err     error
+	}{
+		{
+			request: nil,
+			expect:  expectedResult,
+			err:     nil,
+		},
+	}
+
+	// build response from mocked EventBridge PutEvents call
+	mocks.MockDoPutEvent = func(input *eventbridge.PutEventsInput) (*eventbridge.PutEventsOutput, error) {
+		fmt.Println("Mock PutEvents called")
+		return &eventbridge.PutEventsOutput{},  errors.New("Could not send Event")
+	}
+	// build response from mocked EventBridge PutEvents call
+	mocks.MockDoPublishEvent = func(input *sns.PublishInput) (*sns.PublishOutput, error) {
+		fmt.Println("Mock SNS Publish called")
+		return &sns.PublishOutput{}, nil
+	}
+
+	for _, test := range tests {
+		response, err := Handler(test.request)
+		assert.IsType(t, test.err, err)
+		assert.Equal(t, test.expect, response.Body)
+	}
+}
+
+func TestInitiateHandlerSNSPubFail(t *testing.T) {
+
+	expectedResult := "{\"message\":\"ConchRepublicBackend initiate responding UNsuccessful!\"}"
+
+	tests := []struct {
+		request context.Context
+		expect  string
+		err     error
+	}{
+		{
+			request: nil,
+			expect:  expectedResult,
+			err:     nil,
+		},
+	}
+
+	// build response from mocked EventBridge PutEvents call
+	mocks.MockDoPutEvent = func(input *eventbridge.PutEventsInput) (*eventbridge.PutEventsOutput, error) {
+		fmt.Println("Mock PutEvents called")
+		return &eventbridge.PutEventsOutput{},  nil
+	}
+	// build response from mocked EventBridge PutEvents call
+	mocks.MockDoPublishEvent = func(input *sns.PublishInput) (*sns.PublishOutput, error) {
+		fmt.Println("Mock SNS Publish called")
+		return &sns.PublishOutput{}, errors.New("Could not send SMS")
 	}
 
 	for _, test := range tests {

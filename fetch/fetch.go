@@ -8,7 +8,6 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-lambda-go/lambdacontext"
 	"github.com/rodellison/GoConchRepublicBackEnd/common"
 	"log"
 	"os"
@@ -27,11 +26,6 @@ type Response events.APIGatewayProxyResponse
 func Handler(ctx context.Context, theEvent *events.CloudWatchEvent) (Response, error) {
 
 	fmt.Println("ConchRepublic Fetch invoked ")
-
-	if ctx != nil {
-		//If context info is needed to be used, uncomment next line and do something in the function
-		//contextHandler(&ctx)
-	}
 
 	var thisEventsDetail EventDetail
 	err := json.Unmarshal(theEvent.Detail, &thisEventsDetail)
@@ -149,11 +143,6 @@ func responseHandler(success bool) (Response, error) {
 	}
 
 	return resp, nil
-}
-
-func contextHandler(ctx *context.Context) {
-	lc, _ := lambdacontext.FromContext(*ctx)
-	log.Print(lc)
 }
 
 func main() {

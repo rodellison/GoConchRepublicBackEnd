@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -28,7 +29,7 @@ func init() {
 		SharedConfigState: session.SharedConfigEnable,
 	}))
 
-	// Create the eventbridge events service client, to be used for putting events
+	// Create the DynamoDB service client, to be used for deleting events
 	common.DynamoDBSvcClient = dynamodb.New(sess, &cfg)
 
 	// Create the sns publish service client, to be used for publishing SNS messages
@@ -68,3 +69,76 @@ func TestCleanupHandler(t *testing.T) {
 		assert.Equal(t, test.expect, response.Body)
 	}
 }
+
+func TestCleanupHandlerSMSError(t *testing.T) {
+
+	expectedResult := "{\"message\":\"ConchRepublicBackend cleanup responding UNsuccessful!\"}"
+
+	tests := []struct {
+		request context.Context
+		expect  string
+		err     error
+	}{
+		{
+			request: nil,
+			expect:  expectedResult,
+			err:     nil,
+		},
+	}
+
+	// build response from mocked EventBridge PutEvents call
+	mocks.MockDoPublishEvent = func(input *sns.PublishInput) (*sns.PublishOutput, error) {
+		fmt.Println("Mock SNS Publish called")
+		return &sns.PublishOutput{}, errors.New("Error to test SMS error logic")
+	}
+
+	//A bad date used to test DB Delete error logic
+	//Note, this text itself will not trip up DynamoDB Scan logic, which would just return 0 records..
+	StrFormattedDateToday = "20300101"
+
+	for _, test := range tests {
+		response, err := Handler(test.request)
+		assert.IsType(t, test.err, err)
+		assert.Equal(t, test.expect, response.Body)
+	}
+}
+
+func TestCleanupHandlerDBDeleteError(t *testing.T) {
+
+	expectedResult := "{\"message\":\"ConchRepublicBackend cleanup responding UNsuccessful!\"}"
+
+	tests := []struct {
+		request context.Context
+		expect  string
+		err     error
+	}{
+		{
+			request: nil,
+			expect:  expectedResult,
+			err:     nil,
+		},
+	}
+
+	// build response from mocked EventBridge PutEvents call
+	mocks.MockDoPublishEvent = func(input *sns.PublishInput) (*sns.PublishOutput, error) {
+		fmt.Println("Mock SNS Publish called")
+		return &sns.PublishOutput{}, nil
+	}
+
+	//For this test override the DynamoDBSvcClient to be our Mocked version, so as to test handling Scan error logic
+	common.DynamoDBSvcClient = &mocks.MockDynamoDBSvcClient{}
+	mocks.MockDynamoScan = func(input *dynamodb.ScanInput) (*dynamodb.ScanOutput, error) {
+		fmt.Println("Mock DynamoDB Scan error invoked")
+		return &dynamodb.ScanOutput{}, errors.New("A DynamoDB Scan error occurred")
+	}
+	//A bad date used to test DB Delete error logic
+	//Note, this text itself will not trip up DynamoDB Scan logic, which would just return 0 records..
+	StrFormattedDateToday = "?*^%$^%$"
+
+	for _, test := range tests {
+		response, err := Handler(test.request)
+		assert.IsType(t, test.err, err)
+		assert.Equal(t, test.expect, response.Body)
+	}
+}
+
