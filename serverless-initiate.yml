@@ -5,7 +5,7 @@
 # For full config options, check the docs:
 # https://www.serverless.com/framework/docs/providers/aws/guide/serverless.yml/
 
-service: ConchRepublicBackend
+service: goconchrepublic-initiate
 # app and org for use with dashboard.serverless.com
 #app: your-app-name
 #org: your-org-name
@@ -18,10 +18,7 @@ frameworkVersion: '>=1.28.0 <2.0.0'
 # A custom variables section for centralizing things (e.g. Environmental Variables, etc.) that need to be referenced
 # across modules
 custom:
-  dynamoDBTable: "FloridaKeysEventsTest"
   snsTopic: "arn:aws:sns:us-east-1:619676567607:FloridaKeysTableUpdate"
-  urlBase1: "https://fla-keys.com"
-  urlBase2: "/calendar/all/florida-keys/"
 
 provider:
   name: aws
@@ -41,18 +38,6 @@ provider:
       Resource: "arn:aws:events:us-east-1:619676567607:event-bus/conchrepublic"
     - Effect: "Allow"
       Action:
-        - dynamodb:Query
-        - dynamodb:Scan
-        - dynamodb:GetItem
-        - dynamodb:PutItem
-        - dynamodb:UpdateItem
-        - dynamodb:DeleteItem
-      Resource: [
-        "arn:aws:dynamodb:us-east-1:619676567607:table/FloridaKeysEvents",
-        "arn:aws:dynamodb:us-east-1:619676567607:table/FloridaKeysEventsTest"
-      ]
-    - Effect: "Allow"
-      Action:
         - "sns:Publish"
       Resource: "arn:aws:sns:*:619676567607:FloridaKeysTableUpdate"
 
@@ -70,7 +55,7 @@ package:
   exclude:
     - ./**
   include:
-    - ./bin/**
+    - ./bin/initiate
 
 functions:
   initiate:
@@ -92,47 +77,3 @@ functions:
           #NOTE!! cron time uses UTC time, which may be different than your time, so adjust HOUR parm accordingly
           #so job kicks off at the right time (local time)
           schedule: cron(0 13 ? * SUN *)
-
-  fetch:
-    handler: bin/fetch
-    # Function level environment variables
-    environment:
-      URLBASE: ${self:custom.urlBase1}
-      URLBASE2: ${self:custom.urlBase2}
-    events:
-      - eventBridge:
-# You can have a separate eventBus (instead of Default) if needed
-          eventBus: "arn:aws:events:us-east-1:619676567607:event-bus/conchrepublic"
-          pattern:
-            source:
-              - "conchrepublicbackend.initiate"
-            detail-type:
-              - "conchrepublicbackend.fetch"
-
-  database:
-    handler: bin/database
-    # Function level environment variables
-    environment:
-      DYNAMO_DB_TABLENAME: "FloridaKeysEventsTest"
-
-  cleanup:
-    handler: bin/cleanup
-    environment:
-      SNS_TOPIC: ${self:custom.snsTopic}
-      DYNAMO_DB_TABLENAME: ${self:custom.dynamoDBTable}
-    events:
-      - http:
-          path: cleanup
-          method: get
-      - eventBridge:
-          # You can have a separate eventBus (instead of Default) if needed
-          #          eventBus: 'arn:aws:events:us-east-1:619676567607:event-bus/conchrepublic'
-          # To have eventBridge run this function according to a schedule, or be cron kicked off, use rate or cron
-          #see https://docs.aws.amazon.com/eventbridge/latest/userguide/scheduled-events.html#cron-expressions
-          #schedule: rate(5 minutes)
-          #NOTE!! schedule ONLY works as a rule on the default event bus
-          #NOTE!! cron time uses UTC time, which may be different than your time, so adjust HOUR parm accordingly
-          #so job kicks off at the right time (local time)
-          schedule: cron(15 13 ? * SUN *)
-
-

@@ -11,6 +11,7 @@ import (
 	"github.com/rodellison/GoConchRepublicBackEnd/common"
 	"log"
 	"os"
+	"strconv"
 )
 
 const eventbusStr = "conchrepublic"
@@ -88,12 +89,17 @@ func fetch(month string, chFinished chan bool) {
 		//contain an image vs not contain image
 
 		doc.Find(common.LISTING_BLOCK).Each(func(i int, s *goquery.Selection) {
-			evdata := &common.Eventdata{" ", " ", " ", " ", " ", " ", " ", " ", " "}
+			evdata := &common.Eventdata{" ", " ", " ", " ", " ", " ", " ", " ", " ", 0}
 			err := evdata.ExtractEventData(i, s)
 			if err != nil {
 				//There can be many events, let the error go, print it, but move on to the next item
 				fmt.Println("error caught extracting event detail: " + err.Error())
 			} else {
+				//Setup the event's expiry value - int64 epoch value that DynamoDB can use for automated record removal
+				expYYYY, _ := strconv.Atoi(evdata.EndDate[0:4])
+				expMM, _ := strconv.Atoi(evdata.EndDate[4:6])
+				expDD, _ := strconv.Atoi(evdata.EndDate[6:8])
+                evdata.EventExpiry = common.CalcLongEpochFromEndDate(expYYYY, expMM, expDD)
 
 				detailStr, err := json.Marshal(evdata)
 				if err != nil {

@@ -7,7 +7,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
-	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
 	"os"
 )
 
@@ -62,6 +61,13 @@ func InsertDBEvent(data Eventdata) (err error) {
 	}
 
 }
+
+/*
+!! Keeping these two next functions commented for now, as now trying to use DynamoDB expiry mechansim (using EPOCHS)
+instead of trying to figure out when events expire based on their End Date.  Now, when inserting records, we'll use the
+EndDate to calculate a future epoch/long value and send that in a column called EventExpiry.
+Inside DynamoDB, we'll setup automated purge using the new column and events will basically purge themselves immediately after
+the enddate has occurred.
 
 // func DeleteDBEvents gets EventIDs that are obsolete, and purges them from the DynamoDB table.
 func DeleteDBEvents(endDate string) (countPurged int64, err error) {
@@ -142,3 +148,5 @@ func getEventIDsForOldEvents(endDate string) (returnItems *dynamodb.ScanOutput, 
 
 	return result, nil
 }
+
+ */

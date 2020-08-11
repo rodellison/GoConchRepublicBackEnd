@@ -18,6 +18,7 @@ type Eventdata struct {
 	ImgURL           string `json:"ImgURL"`
 	EventURL         string `json:"EventURL"`
 	EventDescription string `json:"EventDescription"`
+	EventExpiry      int64  `json:"EventExpiry"`
 }
 
 //These constants are for HTML parsing

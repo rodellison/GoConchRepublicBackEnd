@@ -12,6 +12,13 @@ const (
 	layoutUS  = "January 2, 2006"
 )
 
+func CalcLongEpochFromEndDate(year, month, day int) int64 {
+
+	future := time.Date(year, time.Month(month), day, 23, 59, 59, 0 , time.Local)
+	return future.Unix()
+
+}
+
 func CalcSearchYYYYMMFromDate(month string) string {
 
 	monthIncrement, err := strconv.Atoi(month)

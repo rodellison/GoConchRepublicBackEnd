@@ -49,7 +49,7 @@ func TestHandlerCanInsertDynamoDBRequest(t *testing.T) {
 	}
 
 	evdata := []byte(`{ "EventID":"test-3", "StartDate":"20200606", "EndDate":"20200701", "EventName":"Test 3", "EventContact":"No Contact",
-		"EventLocation":"Key West", "ImgURL":"http://someImgURL", "EventURL":"http://someEventURL", "EventDescription":"Test3-Description" }`)
+		"EventLocation":"Key West", "ImgURL":"http://someImgURL", "EventURL":"http://someEventURL", "EventDescription":"Test3-Description", "EventExpiry" : 1609477199 }`)
 
 	var testEvent = events.CloudWatchEvent{
 		DetailType: "conchrepublicbackend.database",
