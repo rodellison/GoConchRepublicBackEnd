@@ -31,6 +31,7 @@ provider:
   # The default is 6 seconds. Note: API Gateway current maximum is 30 seconds
   #timeout: 10
   logRetentionInDays: 30 # Set the default RetentionInDays for a CloudWatch LogGroup
+  versionFunctions: false  #if each different deploy needs to be long term retained, then set to true
   # you can ADD statements to the Lambda function's IAM Role (iamRoleStatements) here
   iamRoleStatements:
     - Effect: "Allow"
