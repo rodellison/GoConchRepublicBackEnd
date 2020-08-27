@@ -14,11 +14,16 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"sync/atomic"
 )
 
 type EventDetail struct {
 	Month string
 }
+
+var (
+	itemCount uint64
+)
 
 type Response events.APIGatewayProxyResponse
 
@@ -45,16 +50,17 @@ func Handler(ctx context.Context, theEvent *events.CloudWatchEvent) (Response, e
 	case value := <-chFinished:
 		//Its possible that the fetch of data or extraction of data fetched did not occur successfully
 		if value != true {
-			fmt.Println("Returned from Notification Channel with Error")
+			fmt.Println("Returned Error")
 			return responseHandler(false)
 		} else {
-			fmt.Println("Returned from Notification Channel")
+			fmt.Println("Returned Successfully. Items processed: " + strconv.FormatUint(itemCount, 10))
 			return responseHandler(true)
 		}
 	}
 }
 
 func fetch(month string, chFinished chan bool) {
+	itemCount = 0
 
 	fullURL := os.Getenv("URLBASE") + os.Getenv("URLBASE2") + common.CalcSearchYYYYMMFromDate(month)
 	fmt.Println(fullURL)
@@ -104,13 +110,15 @@ func fetch(month string, chFinished chan bool) {
 					//There can be many events, let the error go, print it, but move on to the next item
 					fmt.Println("error caught extracting event detail: " + err.Error())
 				} else {
-					//Send an Event with the Event Details into SQS so the Database module that will run later can poll/insert it.
+					//Send an SQS Message with the Event Details so the Database module that will run later can poll/insert it.
 					_, err := common.SQSSvcClient.SendMessage(&sqs.SendMessageInput{
-						MessageBody:         aws.String(string(detailStr)),
-						QueueUrl:            aws.String(os.Getenv("SQS_TOPIC")),
+						MessageBody: aws.String(string(detailStr)),
+						QueueUrl:    aws.String(os.Getenv("SQS_TOPIC")),
 					})
 					if err != nil {
 						fmt.Println("Error sending SQS message: ", err.Error())
+					} else {
+						atomic.AddUint64(&itemCount, 1)
 					}
 
 				}

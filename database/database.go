@@ -18,9 +18,9 @@ import (
 type Response events.APIGatewayProxyResponse
 
 type sqsConsumer struct {
-	QueueURL       string
-	maxMessages    int64
-	maxWaitSeconds int64
+	QueueURL          string
+	maxMessages       int64
+	maxWaitSeconds    int64
 	visibilityTimeout int64
 }
 
@@ -32,15 +32,15 @@ var (
 func init() {
 
 	mySQSConsumer = sqsConsumer{
-		QueueURL:       os.Getenv("SQS_TOPIC"),
-		maxMessages:    10,
-		maxWaitSeconds: 10,
+		QueueURL:          os.Getenv("SQS_TOPIC"),
+		maxMessages:       10,
+		maxWaitSeconds:    10,
 		visibilityTimeout: 30,
 	}
 
 }
 
-func (c *sqsConsumer) consumeAndProcess() {
+func (c *sqsConsumer) consumeAndProcess() error {
 	itemCount = 0
 
 	var wg sync.WaitGroup
@@ -51,13 +51,12 @@ func (c *sqsConsumer) consumeAndProcess() {
 			QueueUrl:            &c.QueueURL,
 			WaitTimeSeconds:     &c.maxWaitSeconds,
 			VisibilityTimeout:   &c.visibilityTimeout,
-
 		})
 		if err != nil {
-			continue
+			return err
 		}
 		if len(output.Messages) > 0 {
-			fmt.Println("This loop is processing " + strconv.Itoa(len(output.Messages)) + " messages")
+			fmt.Println("This loop is processing " + strconv.Itoa(len(output.Messages)) + " messages.")
 			wg.Add(len(output.Messages))
 			for _, message := range output.Messages {
 				go func(m *sqs.Message) {
@@ -88,12 +87,11 @@ func (c *sqsConsumer) consumeAndProcess() {
 			wg.Wait()
 		} else {
 			//There are no more items for this worker so get out
-			fmt.Println("No more messages to process")
-			wg.Wait()
-			return
+			fmt.Println("No messages to process")
+			break
 		}
-
 	}
+	return nil
 }
 
 func Handler(ctx context.Context) (Response, error) {
@@ -102,12 +100,16 @@ func Handler(ctx context.Context) (Response, error) {
 	success := true
 
 	//This calls the main process to process SQS messages and perform a DB insert for each message/item received
-	mySQSConsumer.consumeAndProcess()
-
-	if itemCount > 0 {
-		if err := common.PublishSNSMessage(os.Getenv("SNS_TOPIC"), "Conch Republic Database", "Conch Republic Backend process completed. Count of items processed: "+strconv.FormatUint(itemCount, 10)); err != nil {
-			fmt.Println("Error sending SNS message: ", err.Error())
-			success = false
+	err := mySQSConsumer.consumeAndProcess()
+	if err != nil {
+		fmt.Println("Error receiving messagage from SQS: " + err.Error())
+		success = false
+	} else {
+		if itemCount > 0 {
+			if err := common.PublishSNSMessage(os.Getenv("SNS_TOPIC"), "Conch Republic Database", "Conch Republic Backend process completed. Count of items processed: "+strconv.FormatUint(itemCount, 10)); err != nil {
+				fmt.Println("Error sending SNS message: ", err.Error())
+				success = false
+			}
 		}
 	}
 

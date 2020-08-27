@@ -28,8 +28,8 @@ func init() {
 		SharedConfigState: session.SharedConfigEnable,
 	}))
 
-	common.DynamoDBSvcClient = dynamodb.New(sess, &cfg)   //use this one for actual dB interaction - test or prod
-//	common.DynamoDBSvcClient = &mocks.MockDynamoDBSvcClient{}
+	common.DynamoDBSvcClient = dynamodb.New(sess, &cfg) //use this one for actual dB interaction - test or prod
+	//	common.DynamoDBSvcClient = &mocks.MockDynamoDBSvcClient{}
 	common.SNSSvcClient = &mocks.MockSNSSvcClient{}
 
 }
@@ -65,8 +65,8 @@ func TestHandlerCanInsertDynamoDBRequest(t *testing.T) {
 	//		ItemCollectionMetrics: nil,
 	//	}, nil
 	//}
-	// build response from mocked EventBridge PutEvents call
-	mocks.MockDoPublishEvent = func(input *sns.PublishInput) (*sns.PublishOutput, error) {
+
+	mocks.MockDoSNSPublishEvent = func(input *sns.PublishInput) (*sns.PublishOutput, error) {
 		fmt.Println("Mock SNS Publish called with info: " + *input.Message)
 		return &sns.PublishOutput{}, nil
 	}

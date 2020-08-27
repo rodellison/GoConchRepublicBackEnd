@@ -10,11 +10,11 @@ type MockSNSSvcClient struct {
 }
 
 var (
-	MockDoPublishEvent func(input *sns.PublishInput) (*sns.PublishOutput, error)
+	MockDoSNSPublishEvent func(input *sns.PublishInput) (*sns.PublishOutput, error)
 )
 
 //This is the mocked version of the real function
 //It returns the variable above, which is a function that can be overloaded in our test routines
 func (s *MockSNSSvcClient) Publish(input *sns.PublishInput) (*sns.PublishOutput, error) {
-	return MockDoPublishEvent(input)
+	return MockDoSNSPublishEvent(input)
 }

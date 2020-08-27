@@ -3,9 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"github.com/aws/aws-lambda-go/events"
-	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/rodellison/GoConchRepublicBackEnd/common"
 	"github.com/rodellison/GoConchRepublicBackEnd/mocks"
 	"github.com/stretchr/testify/assert"
@@ -91,12 +89,6 @@ func TestHandlerCanProcessGoodRequest(t *testing.T) {
 		}, nil
 	}
 
-	// build response from mocked EventBridge PutEvents call
-	mocks.MockDoPublishEvent = func(input *sns.PublishInput) (*sns.PublishOutput, error) {
-		fmt.Println("Mock SNS Publish called")
-		return &sns.PublishOutput{}, nil
-	}
-
 	var testEvent = events.CloudWatchEvent{
 		DetailType: "conchrepublicbackend.fetch",
 		Source:     "goconchrepublicbackend.initiate",
@@ -136,11 +128,6 @@ func TestHandlerCanProcessBadRequest(t *testing.T) {
 			StatusCode: 500, //for this test, just using a bad return code to signify http get error
 			Body:       r,
 		}, nil
-	}
-	// build response from mocked EventBridge PutEvents call
-	mocks.MockDoPublishEvent = func(input *sns.PublishInput) (*sns.PublishOutput, error) {
-		fmt.Println("Mock SNS Publish called")
-		return &sns.PublishOutput{}, nil
 	}
 
 	var testEvent = events.CloudWatchEvent{

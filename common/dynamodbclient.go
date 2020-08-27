@@ -46,7 +46,7 @@ func InsertDBEvent(data Eventdata) (err error) {
 		return err
 	}
 
-//	fmt.Println(evItem)
+	//	fmt.Println(evItem)
 
 	_, err = DynamoDBSvcClient.PutItem(&dynamodb.PutItemInput{
 		Item:      evItem,

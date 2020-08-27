@@ -22,10 +22,12 @@ HTTP GET of Event Data for a given month (1 is the current month, 12 is the 12th
 extract event data from the HTML using "**github.com/PuerkitoBio/goquery**", and then 
 create individual event details that can be provided as a JSON string message to be sent into an SQS queue. 
 
-The **database** module is invoked by way of an EventBridge CRON setup (to run a few minutes after the other two modules). 
-It handles the insertion of the Event Data into a DynamoDB database by polling an SQS queue for event items sent by the fetch module 
- looping until all items have been processed. The 'timeout' for this lambda function is set to 20 seconds so as to add 
- some SQS Long polling capability.
+The **database** module is invoked by way of an SQS lambda trigger. When an event(s) are created in the SQS queue by the
+fetch module, SQS will auto-trigger the database module to start whereby it will poll the queue for a batch of up to 
+10 items. If items are found, it handles the insertion of the Event Data into a DynamoDB database 
+ looping until all items in the batch have been processed. The 'timeout' for this lambda function is set to 5 seconds so as to add 
+ some SQS Long polling capability. In some cases, a database module lambda instance will be triggered, but have nothing to process as
+ some preceding triggers will activate a database instance that may have already processed the item in its batch. 
 - Note: When Fetch provides EventData for the Database module to process, one of the columns passed is 
 'EventExpiry', which contains a int64/epoch value calculated based on the Event's EndDate. DynamoDB is configured to use 
 the EventExpiry column data as TTL - ultimately allowing for the records to auto-purge after the EndDate has just passed.
