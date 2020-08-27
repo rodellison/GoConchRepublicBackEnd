@@ -52,7 +52,6 @@ func Handler(ctx context.Context) (Response, error) {
 	return responseHandler(true)
 }
 
-
 func responseHandler(success bool) (Response, error) {
 
 	var returnString string
@@ -61,7 +60,6 @@ func responseHandler(success bool) (Response, error) {
 	} else {
 		returnString = "ConchRepublicBackend initiate responding UNsuccessful!"
 	}
-
 
 	body, err := json.Marshal(map[string]interface{}{
 		"message": returnString,

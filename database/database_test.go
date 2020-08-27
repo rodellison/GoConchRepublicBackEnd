@@ -2,14 +2,15 @@ package main
 
 import (
 	"context"
-	"github.com/aws/aws-lambda-go/events"
+	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/rodellison/GoConchRepublicBackEnd/common"
+	"github.com/rodellison/GoConchRepublicBackEnd/mocks"
 	"github.com/stretchr/testify/assert"
 	"testing"
-	"time"
 )
 
 func init() {
@@ -27,14 +28,15 @@ func init() {
 		SharedConfigState: session.SharedConfigEnable,
 	}))
 
-	// Create the eventbridge events service client, to be used for putting events
-	common.DynamoDBSvcClient = dynamodb.New(sess, &cfg)
+	common.DynamoDBSvcClient = dynamodb.New(sess, &cfg)   //use this one for actual dB interaction - test or prod
+//	common.DynamoDBSvcClient = &mocks.MockDynamoDBSvcClient{}
+	common.SNSSvcClient = &mocks.MockSNSSvcClient{}
 
 }
 
 func TestHandlerCanInsertDynamoDBRequest(t *testing.T) {
 
-	expectedResult := "{\"message\":\"ConchRepublicBackend database responding successful!\"}"
+	expectedResult := "{\"message\":\"ConchRepublicBackend database processed successful!\"}"
 
 	tests := []struct {
 		request context.Context
@@ -48,84 +50,29 @@ func TestHandlerCanInsertDynamoDBRequest(t *testing.T) {
 		},
 	}
 
-	evdata := []byte(`{ "EventID":"test-3", "StartDate":"20200606", "EndDate":"20200701", "EventName":"Test 3", "EventContact":"No Contact",
-		"EventLocation":"Key West", "ImgURL":"http://someImgURL", "EventURL":"http://someEventURL", "EventDescription":"Test3-Description", "EventExpiry" : 1609477199 }`)
+	//mocks.MockDoDeleteSQSMessage = func(input *sqs.DeleteMessageInput) (*sqs.DeleteMessageOutput, error) {
+	//	//Creating a mock for Delete as we don't really want to delete any items
+	//	return &sqs.DeleteMessageOutput{}, nil
+	//}
 
-	var testEvent = events.CloudWatchEvent{
-		DetailType: "conchrepublicbackend.database",
-		Source:     "goconchrepublicbackend.fetch",
-		Time:       time.Now(),
-		Detail:     evdata,
+	// build mock DynamoDB put
+	//mocks.MockDynamoPutItem = func(*dynamodb.PutItemInput) (*dynamodb.PutItemOutput, error) {
+	//	//Placing the NopCloser inside as EACH time the GetDoFunc is called the reader will be 'drained'
+	//	fmt.Println("Mock DynamoDB Put Item called")
+	//	return &dynamodb.PutItemOutput{
+	//		Attributes:            nil,
+	//		ConsumedCapacity:      nil,
+	//		ItemCollectionMetrics: nil,
+	//	}, nil
+	//}
+	// build response from mocked EventBridge PutEvents call
+	mocks.MockDoPublishEvent = func(input *sns.PublishInput) (*sns.PublishOutput, error) {
+		fmt.Println("Mock SNS Publish called with info: " + *input.Message)
+		return &sns.PublishOutput{}, nil
 	}
 
 	for _, test := range tests {
-		response, err := Handler(test.request, &testEvent)
-		assert.IsType(t, test.err, err)
-		assert.Equal(t, test.expect, response.Body)
-	}
-
-}
-
-func TestHandlerHandlesBadInsertDynamoDBRequest(t *testing.T) {
-
-	expectedResult := "{\"message\":\"ConchRepublicBackend database responding UNsuccessful!\"}"
-
-	tests := []struct {
-		request context.Context
-		expect  string
-		err     error
-	}{
-		{
-			request: nil,
-			expect:  expectedResult,
-			err:     nil,
-		},
-	}
-
-	evdata := []byte(`{  }`)
-
-	var testEvent = events.CloudWatchEvent{
-		DetailType: "conchrepublicbackend.database",
-		Source:     "goconchrepublicbackend.fetch",
-		Time:       time.Now(),
-		Detail:     evdata,
-	}
-
-	for _, test := range tests {
-		response, err := Handler(test.request, &testEvent)
-		assert.IsType(t, test.err, err)
-		assert.Equal(t, test.expect, response.Body)
-	}
-
-}
-
-func TestHandlerBadEventdataMarshal(t *testing.T) {
-
-	expectedResult := "{\"message\":\"ConchRepublicBackend database responding UNsuccessful!\"}"
-
-	tests := []struct {
-		request context.Context
-		expect  string
-		err     error
-	}{
-		{
-			request: nil,
-			expect:  expectedResult,
-			err:     nil,
-		},
-	}
-
-	evdata := []byte(``)
-
-	var testEvent = events.CloudWatchEvent{
-		DetailType: "conchrepublicbackend.database",
-		Source:     "goconchrepublicbackend.fetch",
-		Time:       time.Now(),
-		Detail:     evdata,
-	}
-
-	for _, test := range tests {
-		response, err := Handler(test.request, &testEvent)
+		response, err := Handler(test.request)
 		assert.IsType(t, test.err, err)
 		assert.Equal(t, test.expect, response.Body)
 	}

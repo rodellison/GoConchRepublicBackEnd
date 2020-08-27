@@ -8,15 +8,13 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/rodellison/GoConchRepublicBackEnd/common"
 	"log"
 	"os"
 	"strconv"
 )
-
-const eventbusStr = "conchrepublic"
-const sourceStr = "conchrepublicbackend.fetch"
-const detailTypeStr = "conchrepublicbackend.database"
 
 type EventDetail struct {
 	Month string
@@ -99,19 +97,22 @@ func fetch(month string, chFinished chan bool) {
 				expYYYY, _ := strconv.Atoi(evdata.EndDate[0:4])
 				expMM, _ := strconv.Atoi(evdata.EndDate[4:6])
 				expDD, _ := strconv.Atoi(evdata.EndDate[6:8])
-                evdata.EventExpiry = common.CalcLongEpochFromEndDate(expYYYY, expMM, expDD)
+				evdata.EventExpiry = common.CalcLongEpochFromEndDate(expYYYY, expMM, expDD)
 
 				detailStr, err := json.Marshal(evdata)
 				if err != nil {
 					//There can be many events, let the error go, print it, but move on to the next item
 					fmt.Println("error caught extracting event detail: " + err.Error())
 				} else {
-					//Send an Event with the Event Details so the Database module can insert it.
-					//Call the sendEvents function and handle error if it occurs
-					if err := common.SendEBEvent(eventbusStr, sourceStr, detailTypeStr, string(detailStr)); err != nil {
-						//For this modules case, dont fatal out on error, just move along
-						fmt.Println(err.Error())
+					//Send an Event with the Event Details into SQS so the Database module that will run later can poll/insert it.
+					_, err := common.SQSSvcClient.SendMessage(&sqs.SendMessageInput{
+						MessageBody:         aws.String(string(detailStr)),
+						QueueUrl:            aws.String(os.Getenv("SQS_TOPIC")),
+					})
+					if err != nil {
+						fmt.Println("Error sending SQS message: ", err.Error())
 					}
+
 				}
 
 			}

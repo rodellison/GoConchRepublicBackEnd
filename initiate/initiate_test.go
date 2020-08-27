@@ -72,7 +72,7 @@ func TestInitiateHandlerEventPubFail(t *testing.T) {
 	// build response from mocked EventBridge PutEvents call
 	mocks.MockDoPutEvent = func(input *eventbridge.PutEventsInput) (*eventbridge.PutEventsOutput, error) {
 		fmt.Println("Mock PutEvents called")
-		return &eventbridge.PutEventsOutput{},  errors.New("Could not send Event")
+		return &eventbridge.PutEventsOutput{}, errors.New("Could not send Event")
 	}
 	// build response from mocked EventBridge PutEvents call
 	mocks.MockDoPublishEvent = func(input *sns.PublishInput) (*sns.PublishOutput, error) {
@@ -106,7 +106,7 @@ func TestInitiateHandlerSNSPubFail(t *testing.T) {
 	// build response from mocked EventBridge PutEvents call
 	mocks.MockDoPutEvent = func(input *eventbridge.PutEventsInput) (*eventbridge.PutEventsOutput, error) {
 		fmt.Println("Mock PutEvents called")
-		return &eventbridge.PutEventsOutput{},  nil
+		return &eventbridge.PutEventsOutput{}, nil
 	}
 	// build response from mocked EventBridge PutEvents call
 	mocks.MockDoPublishEvent = func(input *sns.PublishInput) (*sns.PublishOutput, error) {

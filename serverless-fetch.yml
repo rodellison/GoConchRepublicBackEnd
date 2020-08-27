@@ -20,6 +20,7 @@ frameworkVersion: '>=1.28.0 <2.0.0'
 custom:
   urlBase1: "https://fla-keys.com"
   urlBase2: "/calendar/all/florida-keys/"
+  sqsTopic: https://sqs.us-east-1.amazonaws.com/${env:AWS_ACCOUNT}/FloridaKeysDBInsert
 
 provider:
   name: aws
@@ -36,8 +37,8 @@ provider:
   iamRoleStatements:
     - Effect: "Allow"
       Action:
-        - "events:PutEvents"
-      Resource: "arn:aws:events:us-east-1:619676567607:event-bus/conchrepublic"
+        - "sqs:*"
+      Resource: arn:aws:sqs:us-east-1:${env:AWS_ACCOUNT}:FloridaKeys*
 
 #BY DEFAULT, these logging group/events role statements come built-in
 #    - Effect: "Allow"
@@ -58,14 +59,16 @@ package:
 functions:
   fetch:
     handler: bin/fetch
+    timeout: 20
     # Function level environment variables
     environment:
       URLBASE: ${self:custom.urlBase1}
       URLBASE2: ${self:custom.urlBase2}
+      SQS_TOPIC: ${self:custom.sqsTopic}
     events:
       - eventBridge:
 # You can have a separate eventBus (instead of Default) if needed
-          eventBus: "arn:aws:events:us-east-1:619676567607:event-bus/conchrepublic"
+          eventBus: arn:aws:events:us-east-1:${env:AWS_ACCOUNT}:event-bus/conchrepublic
           pattern:
             source:
               - "conchrepublicbackend.initiate"

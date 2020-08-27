@@ -7,7 +7,7 @@ import (
 
 func TestCalcLongEpochFromEndDate(t *testing.T) {
 
-	expectedResult := 1609477199
+	expectedResult := int64(1609477199)
 	result := CalcLongEpochFromEndDate(2020, 12, 31)
 	assert.Equal(t, expectedResult, result)
 
