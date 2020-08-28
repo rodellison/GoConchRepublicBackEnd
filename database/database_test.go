@@ -71,6 +71,11 @@ func TestHandlerCanInsertDynamoDBRequest(t *testing.T) {
 		return &sns.PublishOutput{}, nil
 	}
 
+	common.PublishS3Func = func(s string) error {
+		fmt.Println("Mock S3 Publish called with info: " + s)
+		return nil
+	}
+
 	for _, test := range tests {
 		response, err := Handler(test.request)
 		assert.IsType(t, test.err, err)

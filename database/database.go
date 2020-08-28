@@ -42,7 +42,7 @@ func init() {
 
 func (c *sqsConsumer) consumeAndProcess() error {
 	itemCount = 0
-
+	var s3jsonEventCollection []common.Eventdata
 	var wg sync.WaitGroup
 
 	for {
@@ -73,6 +73,9 @@ func (c *sqsConsumer) consumeAndProcess() error {
 						fmt.Println("Error occurred inserting Data via InsertDBEvent")
 					} else {
 						atomic.AddUint64(&itemCount, 1)
+
+						s3jsonEventCollection = append(s3jsonEventCollection, theEvent)
+
 						//If we inserted the Event, then Delete the SQS message
 						_, err := common.SQSSvcClient.DeleteMessage(&sqs.DeleteMessageInput{
 							QueueUrl:      &c.QueueURL,
@@ -87,10 +90,24 @@ func (c *sqsConsumer) consumeAndProcess() error {
 			wg.Wait()
 		} else {
 			//There are no more items for this worker so get out
-			fmt.Println("No messages to process")
+			fmt.Println("No additional messages to process")
 			break
 		}
 	}
+
+	if s3jsonEventCollection != nil {
+		//Finally, take the array of events, convert to
+		s3Json, err := json.Marshal(s3jsonEventCollection)
+		if err != nil {
+			fmt.Println("Error converting array of EventData into Json")
+		} else {
+			err := common.PublishS3JSONFile(string(s3Json))
+			if err != nil {
+				fmt.Println("Error publishing JSON array of events to S3")
+			}
+		}
+	}
+
 	return nil
 }
 

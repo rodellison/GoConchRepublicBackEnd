@@ -21,6 +21,8 @@ custom:
   dynamoDBTable: "FloridaKeysEventsTest"
   snsTopic: arn:aws:sns:us-east-1:${env:AWS_ACCOUNT}:FloridaKeysTableUpdate
   sqsTopic: https://sqs.us-east-1.amazonaws.com/${env:AWS_ACCOUNT}/FloridaKeysDBInsert
+  s3Bucket: content.rodellison.alexa
+  s3KeyName: "ConchRepublic/ConchRepublicEvents.json"
 
 provider:
   name: aws
@@ -80,6 +82,8 @@ functions:
       DYNAMO_DB_TABLENAME: ${self:custom.dynamoDBTable}
       SNS_TOPIC: ${self:custom.snsTopic}
       SQS_TOPIC: ${self:custom.sqsTopic}
+      S3_BUCKET: ${self:custom.s3Bucket}
+      S3_KEY : ${self:custom.s3KeyName}
     events:
       - http:  #this event just for manual testing
           path: database
