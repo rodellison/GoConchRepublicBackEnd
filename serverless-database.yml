@@ -72,7 +72,7 @@ package:
 functions:
   database:
     handler: bin/database
-    timeout: 30  #can't be more than 30 seconds IF also having http event (api gateway) as part of triggers
+    timeout: 120  #note, this value can't be more than 30 seconds IF also having http event (api gateway) as part of triggers
     memorySize: 512
     # Function level environment variables
     environment:
@@ -80,9 +80,9 @@ functions:
       SNS_TOPIC: ${self:custom.snsTopic}
       SQS_TOPIC: ${self:custom.sqsTopic}
     events:
-      - http:  #this event just for manual testing
-          path: database
-          method: get
+#      - http:  #this event just for manual testing
+#          path: database
+#          method: get
       - eventBridge:
           # You can have a separate eventBus (instead of Default) if needed
           # eventBus: 'arn:aws:events:us-east-1:619676567607:event-bus/conchrepublic'
