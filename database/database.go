@@ -59,7 +59,7 @@ func (c *sqsConsumer) consumeAndProcess() error {
 			fmt.Println("This loop is processing " + strconv.Itoa(len(output.Messages)) + " messages.")
 			wg.Add(len(output.Messages))
 			for _, message := range output.Messages {
-				go func(m *sqs.Message) {
+				go func(c *sqsConsumer, m *sqs.Message) {
 					defer wg.Done()
 					var theEvent common.Eventdata
 					messagebodyBytes := []byte(*m.Body)
@@ -77,13 +77,13 @@ func (c *sqsConsumer) consumeAndProcess() error {
 						//If we inserted the Event, then Delete the SQS message
 						_, err := common.SQSSvcClient.DeleteMessage(&sqs.DeleteMessageInput{
 							QueueUrl:      &c.QueueURL,
-							ReceiptHandle: message.ReceiptHandle,
+							ReceiptHandle: m.ReceiptHandle,
 						}) //MESSAGE CONSUMED
 						if err != nil {
 							fmt.Println("Error deleting SQS message")
 						}
 					}
-				}(message)
+				}(c, message)
 			}
 			wg.Wait()
 		} else {
