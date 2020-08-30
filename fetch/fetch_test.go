@@ -93,7 +93,7 @@ func TestHandlerCanProcessGoodRequest(t *testing.T) {
 		DetailType: "conchrepublicbackend.fetch",
 		Source:     "goconchrepublicbackend.initiate",
 		Time:       time.Now(),
-		Detail:     []byte(`{ "month": "1" }`),
+		Detail:     []byte(`{ "month": "5" }`),
 	}
 
 	for _, test := range tests {

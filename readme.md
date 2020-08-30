@@ -25,7 +25,7 @@ create individual event details that can be provided as a JSON string message to
 The **database** module is invoked by way of an SQS lambda trigger. When an event(s) are created in the SQS queue by the
 fetch module, SQS will auto-trigger the database module to start whereby it will poll the queue for a batch of up to 
 10 items. If items are found, it handles the insertion of the Event Data into a DynamoDB database 
- looping until all items in the batch have been processed. The 'timeout' for this lambda function is set to 5 seconds so as to add 
+ looping until all items in the batch have been processed. The 'timeout' for this lambda function is set to 30 seconds so as to add 
  some SQS Long polling capability. In some cases, a database module lambda instance will be triggered, but have nothing to process as
  some preceding triggers will activate a database instance that may have already processed the item in its batch. 
 - Note: When Fetch provides EventData for the Database module to process, one of the columns passed is 

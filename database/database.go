@@ -42,7 +42,6 @@ func init() {
 
 func (c *sqsConsumer) consumeAndProcess() error {
 	itemCount = 0
-	var s3jsonEventCollection []common.Eventdata
 	var wg sync.WaitGroup
 
 	for {
@@ -56,26 +55,25 @@ func (c *sqsConsumer) consumeAndProcess() error {
 			return err
 		}
 		if len(output.Messages) > 0 {
+
 			fmt.Println("This loop is processing " + strconv.Itoa(len(output.Messages)) + " messages.")
 			wg.Add(len(output.Messages))
 			for _, message := range output.Messages {
 				go func(m *sqs.Message) {
 					defer wg.Done()
-					fmt.Println("SQS Message Item: " + *m.MessageId)
 					var theEvent common.Eventdata
 					messagebodyBytes := []byte(*m.Body)
 
 					if err := json.Unmarshal(messagebodyBytes, &theEvent); err != nil {
 						panic(err)
 					}
+
+					fmt.Println("SQS Message Item: " + *m.MessageId + ", with EventID: " + theEvent.EventID)
 					dberr := common.InsertDBEvent(theEvent)
 					if dberr != nil {
 						fmt.Println("Error occurred inserting Data via InsertDBEvent")
 					} else {
 						atomic.AddUint64(&itemCount, 1)
-
-						s3jsonEventCollection = append(s3jsonEventCollection, theEvent)
-
 						//If we inserted the Event, then Delete the SQS message
 						_, err := common.SQSSvcClient.DeleteMessage(&sqs.DeleteMessageInput{
 							QueueUrl:      &c.QueueURL,
@@ -95,19 +93,6 @@ func (c *sqsConsumer) consumeAndProcess() error {
 		}
 	}
 
-	if s3jsonEventCollection != nil {
-		//Finally, take the array of events, convert to
-		s3Json, err := json.Marshal(s3jsonEventCollection)
-		if err != nil {
-			fmt.Println("Error converting array of EventData into Json")
-		} else {
-			err := common.PublishS3JSONFile(string(s3Json))
-			if err != nil {
-				fmt.Println("Error publishing JSON array of events to S3")
-			}
-		}
-	}
-
 	return nil
 }
 
@@ -123,9 +108,11 @@ func Handler(ctx context.Context) (Response, error) {
 		success = false
 	} else {
 		if itemCount > 0 {
-			if err := common.PublishSNSMessage(os.Getenv("SNS_TOPIC"), "Conch Republic Database", "Conch Republic Backend process completed. Count of items processed: "+strconv.FormatUint(itemCount, 10)); err != nil {
+			snsBody := "Conch Republic Backend process completed. Count of items processed: " + strconv.FormatUint(itemCount, 10)
+			fmt.Println(snsBody)
+			err := common.PublishSNSMessage(os.Getenv("SNS_TOPIC"), "Conch Republic Database", snsBody)
+			if err != nil {
 				fmt.Println("Error sending SNS message: ", err.Error())
-				success = false
 			}
 		}
 	}

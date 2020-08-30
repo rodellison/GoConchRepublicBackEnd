@@ -61,7 +61,7 @@ package:
 functions:
   initiate:
     handler: bin/initiate
-    memorySize: 256
+    memorySize: 128
     # Function level environment variables
     environment:
       SNS_TOPIC: ${self:custom.snsTopic}

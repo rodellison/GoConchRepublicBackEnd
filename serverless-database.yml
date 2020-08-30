@@ -21,8 +21,6 @@ custom:
   dynamoDBTable: "FloridaKeysEventsTest"
   snsTopic: arn:aws:sns:us-east-1:${env:AWS_ACCOUNT}:FloridaKeysTableUpdate
   sqsTopic: https://sqs.us-east-1.amazonaws.com/${env:AWS_ACCOUNT}/FloridaKeysDBInsert
-  s3Bucket: content.rodellison.alexa
-  s3KeyName: "ConchRepublic/ConchRepublicEvents.json"
 
 provider:
   name: aws
@@ -55,7 +53,6 @@ provider:
         - "sns:*"
       Resource:  arn:aws:sns:us-east-1:${env:AWS_ACCOUNT}:FloridaKeys*
 
-
 #BY DEFAULT, these logging group/events role statements come built-in
 #    - Effect: "Allow"
 #      Action:
@@ -75,15 +72,13 @@ package:
 functions:
   database:
     handler: bin/database
-    timeout: 60
+    timeout: 30  #can't be more than 30 seconds IF also having http event (api gateway) as part of triggers
     memorySize: 512
     # Function level environment variables
     environment:
       DYNAMO_DB_TABLENAME: ${self:custom.dynamoDBTable}
       SNS_TOPIC: ${self:custom.snsTopic}
       SQS_TOPIC: ${self:custom.sqsTopic}
-      S3_BUCKET: ${self:custom.s3Bucket}
-      S3_KEY : ${self:custom.s3KeyName}
     events:
       - http:  #this event just for manual testing
           path: database
@@ -97,4 +92,4 @@ functions:
           #NOTE!! schedule ONLY works as a rule on the default event bus
           #NOTE!! cron time uses UTC time, which may be different than your time, so adjust HOUR parm accordingly
           #so job kicks off at the right time (local time)
-          schedule: cron(10 22 ? * MON-FRI *)   #run Mon-Fri starting at 22:10 UTC
+          schedule: cron(0/10 22-23 ? * MON-FRI *)   #run Mon-Fri starting at 22:10 UTC

@@ -26,7 +26,9 @@ func CalcSearchYYYYMMFromDate(month string) string {
 		fmt.Println("calcSearchYYYYMMFromDate: Could not convert month to YYYYMM date")
 		monthIncrement = 1
 	}
-	dateToFetch := time.Now().AddDate(0, monthIncrement-1, 0).String()
+
+	dateToday := time.Date(time.Now().Year(), time.Now().Month(), 01, 0, 0, 0, 0, time.Local)
+	dateToFetch := dateToday.AddDate(0, monthIncrement-1, 0).String()
 	dateValues := strings.SplitN(dateToFetch, "-", 3)
 	return dateValues[0] + dateValues[1]
 
