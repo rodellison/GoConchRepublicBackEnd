@@ -93,6 +93,15 @@ func TestHandlerCanProcessGoodRequest(t *testing.T) {
 		}, nil
 	}
 
+	//Mock out the ctxhttp context sensitive http do function
+	common.DoHTTPWithCTX = func(ctx aws.Context, client *http.Client, req *http.Request) (*http.Response, error) {
+		r := ioutil.NopCloser(bytes.NewReader([]byte(testGoodHTML)))
+		return &http.Response{
+			StatusCode: 200,
+			Body:       r,
+		}, nil
+	}
+
 	mocks.MockDoSendSQSMessageWithContext = func(aws.Context, *sqs.SendMessageInput, ...request.Option) (*sqs.SendMessageOutput, error) {
 		//Placing the NopCloser inside as EACH time the GetDoFunc is called the reader will be 'drained'
 		return &sqs.SendMessageOutput{}, nil
@@ -133,6 +142,15 @@ func TestHandlerCanProcessBadRequest(t *testing.T) {
 	mocks.GetDoHTTPFunc = func(*http.Request) (*http.Response, error) {
 		//Placing the NopCloser inside as EACH time the GetDoFunc is called the reader will be 'drained'
 		r := ioutil.NopCloser(bytes.NewReader([]byte("")))
+		return &http.Response{
+			StatusCode: 500, //for this test, just using a bad return code to signify http get error
+			Body:       r,
+		}, nil
+	}
+
+	//Mock out the ctxhttp context sensitive http do function
+	common.DoHTTPWithCTX = func(ctx aws.Context, client *http.Client, req *http.Request) (*http.Response, error) {
+		r := ioutil.NopCloser(bytes.NewReader([]byte(testGoodHTML)))
 		return &http.Response{
 			StatusCode: 500, //for this test, just using a bad return code to signify http get error
 			Body:       r,

@@ -24,6 +24,7 @@ type HTTPClient interface {
 var (
 	TheHTTPClient HTTPClient
 	ctxClient *http.Client
+	DoHTTPWithCTX func(ctx aws.Context, client *http.Client, req *http.Request) (*http.Response, error)
 )
 
 func init() {
@@ -31,6 +32,7 @@ func init() {
 	//testing, the value will be preset to ensure that it uses the 'real' httpClient interface
 	ctxClient =  xray.Client(&http.Client{})
 	TheHTTPClient = ctxClient
+	DoHTTPWithCTX = ctxhttp.Do
 
 }
 
@@ -60,6 +62,6 @@ func GetURLWithContext(ctx aws.Context, url string) (*http.Response, error) {
 		return nil, err
 	}
 
-	return ctxhttp.Do(ctx, ctxClient, request)
+	return DoHTTPWithCTX(ctx, ctxClient, request)
 }
 

@@ -19,6 +19,7 @@ var (
 	  Body:       <whatever string or json we want>,
 	}, nil
 	*/
+
 )
 
 // Do is the mock client's `Do` func
