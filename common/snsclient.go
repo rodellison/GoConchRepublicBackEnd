@@ -5,10 +5,12 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
+	"github.com/aws/aws-xray-sdk-go/xray"
 )
 
 var (
-	SNSSvcClient snsiface.SNSAPI
+	SNSIfaceClient snsiface.SNSAPI
+	SNSSvcClient   *sns.SNS
 )
 
 func init() {
@@ -17,13 +19,16 @@ func init() {
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	}))
-	// Create the eventbridge events service client, to be used for putting events
+	// Create the SNS service client, to be used for putting events
 	SNSSvcClient = sns.New(sess)
+	SNSIfaceClient = SNSSvcClient
+
+	xray.AWS(SNSSvcClient.Client)
 
 }
 
 // func PublishSNSMessage uses an SDK service client to send an SNS Publish request
-func PublishSNSMessage(snsTopic, snsSubject, snsMessage string) (err error) {
+func PublishSNSMessage(thisContext aws.Context, snsTopic, snsSubject, snsMessage string) (err error) {
 
 	pubInput := &sns.PublishInput{
 		Message:  aws.String(snsMessage),
@@ -31,11 +36,7 @@ func PublishSNSMessage(snsTopic, snsSubject, snsMessage string) (err error) {
 		TopicArn: aws.String(snsTopic),
 	}
 
-	_, err = SNSSvcClient.Publish(pubInput)
-	if err != nil {
-		return err
-	} else {
-		return nil
-	}
+	_, err = SNSIfaceClient.PublishWithContext(thisContext, pubInput)
+	return err
 
 }

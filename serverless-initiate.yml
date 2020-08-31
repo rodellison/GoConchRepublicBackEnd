@@ -21,6 +21,9 @@ custom:
   snsTopic: arn:aws:sns:us-east-1:${env:AWS_ACCOUNT}:FloridaKeysTableUpdate
 
 provider:
+  tracing:
+    apiGateway: true
+    lambda: true
   name: aws
   runtime: go1.x
   # Set the default stage used. Default is dev

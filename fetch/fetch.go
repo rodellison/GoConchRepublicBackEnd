@@ -2,14 +2,13 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/aws/aws-xray-sdk-go/xray"
 	"github.com/rodellison/GoConchRepublicBackEnd/common"
 	"log"
 	"os"
@@ -27,7 +26,8 @@ var (
 
 type Response events.APIGatewayProxyResponse
 
-func Handler(ctx context.Context, theEvent *events.CloudWatchEvent) (Response, error) {
+func Handler(ctx aws.Context, theEvent *events.CloudWatchEvent) (Response, error) {
+	xray.Configure(xray.Config{LogLevel: "trace"})
 
 	fmt.Println("ConchRepublic Fetch invoked ")
 
@@ -43,7 +43,7 @@ func Handler(ctx context.Context, theEvent *events.CloudWatchEvent) (Response, e
 		close(chFinished)
 	}()
 
-	go fetch(thisEventsDetail.Month, chFinished)
+	go fetch(ctx, thisEventsDetail.Month, chFinished)
 
 	// Subscribe to both channels
 	select {
@@ -59,7 +59,7 @@ func Handler(ctx context.Context, theEvent *events.CloudWatchEvent) (Response, e
 	}
 }
 
-func fetch(month string, chFinished chan bool) {
+func fetch(ctx aws.Context, month string, chFinished chan bool) {
 	itemCount = 0
 
 	fullURL := os.Getenv("URLBASE") + os.Getenv("URLBASE2") + common.CalcSearchYYYYMMFromDate(month)
@@ -69,8 +69,9 @@ func fetch(month string, chFinished chan bool) {
 	//to downstream processing
 	returnValue := true
 
-	//http get logic is in a common httpclient file
-	if resp, err := common.GetURL(fullURL); err != nil || resp.StatusCode != 200 {
+	resp, err := common.GetURLWithContext(ctx, fullURL)
+//	resp, err := common.GetURL(fullURL)
+	if err != nil || resp.StatusCode != 200 {
 		//This is critical, return immediately and don't try to process anything further
 		fmt.Println("ERROR: Failed to fetch:", fullURL)
 		resp.Body.Close()
@@ -111,10 +112,7 @@ func fetch(month string, chFinished chan bool) {
 					fmt.Println("error caught extracting event detail: " + err.Error())
 				} else {
 					//Send an SQS Message with the Event Details so the Database module that will run later can poll/insert it.
-					_, err := common.SQSSvcClient.SendMessage(&sqs.SendMessageInput{
-						MessageBody: aws.String(string(detailStr)),
-						QueueUrl:    aws.String(os.Getenv("SQS_TOPIC")),
-					})
+					_, err := common.SendSQSMessage(ctx, string(detailStr))
 					if err != nil {
 						fmt.Println("Error sending SQS message: ", err.Error())
 					} else {

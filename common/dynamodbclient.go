@@ -7,12 +7,16 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
+
+	//	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
+	"github.com/aws/aws-xray-sdk-go/xray"
 	"os"
 )
 
 var (
-	DynamoDBSvcClient dynamodbiface.DynamoDBAPI
-	TableName         string
+	DynamoDBIfaceClient dynamodbiface.DynamoDBAPI
+	DynamoDBSvcClient   *dynamodb.DynamoDB
+	TableName           string
 )
 
 func init() {
@@ -28,16 +32,20 @@ func init() {
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	}))
-	// Create the eventbridge events service client, to be used for putting events
+	// Create the DynamoDB service client, to be used for inserting DB entries
 	DynamoDBSvcClient = dynamodb.New(sess, &cfg)
+	DynamoDBIfaceClient = DynamoDBSvcClient
 
 	//Making the Tablename an environmental variable so that it can be changed outside of program
 	TableName = os.Getenv("DYNAMO_DB_TABLENAME")
 
+	//Note: XRay is unnecessary - but using it to try out tracing services..
+	xray.AWS(DynamoDBSvcClient.Client)
+
 }
 
 // func InsertDBEvent converts Eventdata into appropriate DynamoDB table attributes, and puts the item into the DB.
-func InsertDBEvent(data Eventdata) (err error) {
+func InsertDBEvent(ctx aws.Context, data Eventdata) (err error) {
 
 	//First, Marshal the incoming EventItem JSON string data into a DynamoDB attribute map
 	evItem, err := dynamodbattribute.MarshalMap(data)
@@ -48,7 +56,8 @@ func InsertDBEvent(data Eventdata) (err error) {
 
 	//	fmt.Println(evItem)
 
-	_, err = DynamoDBSvcClient.PutItem(&dynamodb.PutItemInput{
+	_, err = DynamoDBIfaceClient.PutItemWithContext(ctx, &dynamodb.PutItemInput{
+		//	_, err = DynamoDBIfaceClient.PutItem(&dynamodb.PutItemInput{
 		Item:      evItem,
 		TableName: &TableName,
 	})

@@ -10,7 +10,8 @@ import (
 )
 
 var (
-	EBSvcClient eventbridgeiface.EventBridgeAPI
+	EBIfaceClient eventbridgeiface.EventBridgeAPI
+	EBSvcClient   *eventbridge.EventBridge
 )
 
 func init() {
@@ -21,13 +22,14 @@ func init() {
 	}))
 	// Create the eventbridge events service client, to be used for putting events
 	EBSvcClient = eventbridge.New(sess)
+	EBIfaceClient = EBSvcClient
 
 }
 
 // func sendEvent uses an SDK service client to make a request to Amazon EventBridge.
 func SendEBEvent(eventbusStr, sourceStr, detailTypeStr, detailStr string) (err error) {
 	fmt.Println("Sending Event with detailStr:", detailStr)
-	_, err = EBSvcClient.PutEvents(&eventbridge.PutEventsInput{
+	_, err = EBIfaceClient.PutEvents(&eventbridge.PutEventsInput{
 		Entries: []*eventbridge.PutEventsRequestEntry{
 			{
 				EventBusName: aws.String(eventbusStr),

@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/service/eventbridge"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/rodellison/GoConchRepublicBackEnd/common"
@@ -15,8 +17,8 @@ import (
 func init() {
 	//IMPORTANT!! - for the test to use our mocked response below, we have to make sure to set the client to
 	//be the mocked client(s), which will use the overridden versions of the function that makes calls
-	common.EBSvcClient = &mocks.MockEBSvcClient{}
-	common.SNSSvcClient = &mocks.MockSNSSvcClient{}
+	common.EBIfaceClient = &mocks.MockEBSvcClient{}
+	common.SNSIfaceClient = &mocks.MockSNSSvcClient{}
 }
 
 func TestInitiateHandlerSuccess(t *testing.T) {
@@ -41,8 +43,12 @@ func TestInitiateHandlerSuccess(t *testing.T) {
 		return &eventbridge.PutEventsOutput{}, nil
 	}
 
-	mocks.MockDoSNSPublishEvent = func(input *sns.PublishInput) (*sns.PublishOutput, error) {
+	mocks.MockDoSNSPublish = func(input *sns.PublishInput) (*sns.PublishOutput, error) {
 		fmt.Println("Mock SNS Publish called")
+		return &sns.PublishOutput{}, nil
+	}
+	mocks.MockDoSNSPublishWithContext = func(ctx aws.Context, input *sns.PublishInput, option ...request.Option) (*sns.PublishOutput, error) {
+		fmt.Println("Mock SNS PublishWithContext called")
 		return &sns.PublishOutput{}, nil
 	}
 
@@ -75,7 +81,7 @@ func TestInitiateHandlerEventPubFail(t *testing.T) {
 		return &eventbridge.PutEventsOutput{}, errors.New("Could not send Event")
 	}
 
-	mocks.MockDoSNSPublishEvent = func(input *sns.PublishInput) (*sns.PublishOutput, error) {
+	mocks.MockDoSNSPublish = func(input *sns.PublishInput) (*sns.PublishOutput, error) {
 		fmt.Println("Mock SNS Publish called")
 		return &sns.PublishOutput{}, nil
 	}
@@ -109,11 +115,14 @@ func TestInitiateHandlerSNSPubFail(t *testing.T) {
 		return &eventbridge.PutEventsOutput{}, nil
 	}
 
-	mocks.MockDoSNSPublishEvent = func(input *sns.PublishInput) (*sns.PublishOutput, error) {
+	mocks.MockDoSNSPublish = func(input *sns.PublishInput) (*sns.PublishOutput, error) {
 		fmt.Println("Mock SNS Publish called")
 		return &sns.PublishOutput{}, errors.New("Could not send SMS")
 	}
-
+	mocks.MockDoSNSPublishWithContext = func(ctx aws.Context, input *sns.PublishInput, options ...request.Option) (*sns.PublishOutput, error) {
+		fmt.Println("Mock SNS PublishWithContext called")
+		return &sns.PublishOutput{}, errors.New("Could not send SMS")
+	}
 	for _, test := range tests {
 		response, err := Handler(test.request)
 		assert.IsType(t, test.err, err)

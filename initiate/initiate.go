@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-xray-sdk-go/xray"
 	"github.com/rodellison/GoConchRepublicBackEnd/common"
 	"os"
 	"time"
@@ -22,7 +23,7 @@ type Response events.APIGatewayProxyResponse
 
 // Handler is our lambda handler invoked by the `lambda.Start` function call
 func Handler(ctx context.Context) (Response, error) {
-
+	xray.Configure(xray.Config{LogLevel: "trace"})
 	fmt.Println("ConchRepublic Initiate invoked")
 
 	fmt.Println("ConchRepublic Initiate begin sending events..")
@@ -44,7 +45,7 @@ func Handler(ctx context.Context) (Response, error) {
 	}
 	fmt.Println("ConchRepublic initiate send events completed.")
 
-	if err := common.PublishSNSMessage(os.Getenv("SNS_TOPIC"), "Conch Republic Initiate", "Conch Republic Backend process initiated."); err != nil {
+	if err := common.PublishSNSMessage(ctx, os.Getenv("SNS_TOPIC"), "Conch Republic Initiate", "Conch Republic Backend process initiated."); err != nil {
 		fmt.Println("Error sending SNS message: ", err.Error())
 		return responseHandler(false)
 	}

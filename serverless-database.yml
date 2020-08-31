@@ -23,6 +23,8 @@ custom:
   sqsTopic: https://sqs.us-east-1.amazonaws.com/${env:AWS_ACCOUNT}/FloridaKeysDBInsert
 
 provider:
+  tracing:
+    lambda: true
   name: aws
   runtime: go1.x
   # Set the default stage used. Default is dev

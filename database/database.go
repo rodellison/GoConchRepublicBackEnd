@@ -2,12 +2,13 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/aws/aws-xray-sdk-go/xray"
 	"github.com/rodellison/GoConchRepublicBackEnd/common"
 	"os"
 	"strconv"
@@ -40,21 +41,16 @@ func init() {
 
 }
 
-func (c *sqsConsumer) consumeAndProcess() error {
+func (c *sqsConsumer) consumeAndProcess(ctx aws.Context) error {
 	itemCount = 0
 	var wg sync.WaitGroup
 
 	for {
-		output, err := common.SQSSvcClient.ReceiveMessage(&sqs.ReceiveMessageInput{
-			MaxNumberOfMessages: &c.maxMessages,
-			QueueUrl:            &c.QueueURL,
-			WaitTimeSeconds:     &c.maxWaitSeconds,
-			VisibilityTimeout:   &c.visibilityTimeout,
-		})
+		output, err := common.ReceiveSQSMessages(ctx, &c.QueueURL, &c.maxMessages, &c.maxWaitSeconds, &c.visibilityTimeout)
 		if err != nil {
 			return err
 		}
-		if len(output.Messages) > 0 {
+		if output != nil && len(output.Messages) > 0 {
 
 			fmt.Println("This loop is processing " + strconv.Itoa(len(output.Messages)) + " messages.")
 			wg.Add(len(output.Messages))
@@ -69,16 +65,13 @@ func (c *sqsConsumer) consumeAndProcess() error {
 					}
 
 					fmt.Println("SQS Message Item: " + *m.MessageId + ", with EventID: " + theEvent.EventID)
-					dberr := common.InsertDBEvent(theEvent)
+					dberr := common.InsertDBEvent(ctx, theEvent)
 					if dberr != nil {
 						fmt.Println("Error occurred inserting Data via InsertDBEvent")
 					} else {
 						atomic.AddUint64(&itemCount, 1)
 						//If we inserted the Event, then Delete the SQS message
-						_, err := common.SQSSvcClient.DeleteMessage(&sqs.DeleteMessageInput{
-							QueueUrl:      &c.QueueURL,
-							ReceiptHandle: m.ReceiptHandle,
-						}) //MESSAGE CONSUMED
+						err := common.DeleteSQSMessage(ctx, &c.QueueURL, m.ReceiptHandle) //MESSAGE CONSUMED
 						if err != nil {
 							fmt.Println("Error deleting SQS message")
 						}
@@ -91,18 +84,19 @@ func (c *sqsConsumer) consumeAndProcess() error {
 			fmt.Println("No additional messages to process")
 			break
 		}
+
 	}
 
 	return nil
 }
 
-func Handler(ctx context.Context) (Response, error) {
-
+func Handler(ctx aws.Context) (Response, error) {
+	xray.Configure(xray.Config{LogLevel: "trace"})
 	fmt.Println("ConchRepublic Database starting...")
 	success := true
 
 	//This calls the main process to process SQS messages and perform a DB insert for each message/item received
-	err := mySQSConsumer.consumeAndProcess()
+	err := mySQSConsumer.consumeAndProcess(ctx)
 	if err != nil {
 		fmt.Println("Error receiving messagage from SQS: " + err.Error())
 		success = false
@@ -110,7 +104,7 @@ func Handler(ctx context.Context) (Response, error) {
 		if itemCount > 0 {
 			snsBody := "Conch Republic Backend process completed. Count of items processed: " + strconv.FormatUint(itemCount, 10)
 			fmt.Println(snsBody)
-			err := common.PublishSNSMessage(os.Getenv("SNS_TOPIC"), "Conch Republic Database", snsBody)
+			err := common.PublishSNSMessage(ctx, os.Getenv("SNS_TOPIC"), "Conch Republic Database", snsBody)
 			if err != nil {
 				fmt.Println("Error sending SNS message: ", err.Error())
 			}

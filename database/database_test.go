@@ -1,12 +1,13 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/sns"
+	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/rodellison/GoConchRepublicBackEnd/common"
 	"github.com/rodellison/GoConchRepublicBackEnd/mocks"
 	"github.com/stretchr/testify/assert"
@@ -30,7 +31,8 @@ func init() {
 
 	common.DynamoDBSvcClient = dynamodb.New(sess, &cfg) //use this one for actual dB interaction - test or prod
 	//	common.DynamoDBSvcClient = &mocks.MockDynamoDBSvcClient{}
-	common.SNSSvcClient = &mocks.MockSNSSvcClient{}
+	common.SNSIfaceClient = &mocks.MockSNSSvcClient{}
+	//	common.SQSIfaceClient = &mocks.MockSQSSvcClient{}
 
 }
 
@@ -39,7 +41,7 @@ func TestHandlerCanInsertDynamoDBRequest(t *testing.T) {
 	expectedResult := "{\"message\":\"ConchRepublicBackend database processed successful!\"}"
 
 	tests := []struct {
-		request context.Context
+		request aws.Context
 		expect  string
 		err     error
 	}{
@@ -66,14 +68,21 @@ func TestHandlerCanInsertDynamoDBRequest(t *testing.T) {
 	//	}, nil
 	//}
 
-	mocks.MockDoSNSPublishEvent = func(input *sns.PublishInput) (*sns.PublishOutput, error) {
+	mocks.MockDoSNSPublish = func(input *sns.PublishInput) (*sns.PublishOutput, error) {
 		fmt.Println("Mock SNS Publish called with info: " + *input.Message)
 		return &sns.PublishOutput{}, nil
 	}
-
-	common.PublishS3Func = func(s string) error {
-		fmt.Println("Mock S3 Publish called with info: " + s)
-		return nil
+	mocks.MockDoSNSPublishWithContext = func(ctx aws.Context, input *sns.PublishInput, options ...request.Option) (*sns.PublishOutput, error) {
+		fmt.Println("Mock SNS PublishWithContext called with info: " + *input.Message)
+		return &sns.PublishOutput{}, nil
+	}
+	mocks.MockDoReceiveSQSMessageWithContext = func(ctx aws.Context, input *sqs.ReceiveMessageInput, options ...request.Option) (*sqs.ReceiveMessageOutput, error) {
+		fmt.Println("Mock SQS ReceiveMessageWithontext called with info: ")
+		return &sqs.ReceiveMessageOutput{Messages: nil}, nil
+	}
+	mocks.MockDoReceiveSQSMessage = func(input *sqs.ReceiveMessageInput) (*sqs.ReceiveMessageOutput, error) {
+		//Creating a mock for Delete as we don't really want to delete any items
+		return &sqs.ReceiveMessageOutput{}, nil
 	}
 
 	for _, test := range tests {

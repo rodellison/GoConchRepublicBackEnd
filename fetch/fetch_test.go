@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"context"
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/request"
+	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/rodellison/GoConchRepublicBackEnd/common"
 	"github.com/rodellison/GoConchRepublicBackEnd/mocks"
 	"github.com/stretchr/testify/assert"
@@ -57,8 +60,9 @@ func init() {
 	//IMPORTANT!! - for the test to use our mocked response below, we have to make sure to set the client to
 	//be the mocked client, which will use the overridden versions of the function that makes calls
 	common.TheHTTPClient = &mocks.MockHTTPClient{}
-	common.EBSvcClient = &mocks.MockEBSvcClient{}
-	common.SNSSvcClient = &mocks.MockSNSSvcClient{}
+	common.EBIfaceClient = &mocks.MockEBSvcClient{}
+	common.SNSIfaceClient = &mocks.MockSNSSvcClient{}
+	common.SQSIfaceClient = &mocks.MockSQSSvcClient{}
 
 }
 
@@ -72,7 +76,7 @@ func TestHandlerCanProcessGoodRequest(t *testing.T) {
 		err     error
 	}{
 		{
-			request: nil,
+			request: context.Background(),
 			expect:  expectedResult,
 			err:     nil,
 		},
@@ -87,6 +91,11 @@ func TestHandlerCanProcessGoodRequest(t *testing.T) {
 			StatusCode: 200,
 			Body:       r,
 		}, nil
+	}
+
+	mocks.MockDoSendSQSMessageWithContext = func(aws.Context, *sqs.SendMessageInput, ...request.Option) (*sqs.SendMessageOutput, error) {
+		//Placing the NopCloser inside as EACH time the GetDoFunc is called the reader will be 'drained'
+		return &sqs.SendMessageOutput{}, nil
 	}
 
 	var testEvent = events.CloudWatchEvent{
@@ -128,6 +137,11 @@ func TestHandlerCanProcessBadRequest(t *testing.T) {
 			StatusCode: 500, //for this test, just using a bad return code to signify http get error
 			Body:       r,
 		}, nil
+	}
+
+	mocks.MockDoSendSQSMessageWithContext = func(aws.Context, *sqs.SendMessageInput, ...request.Option) (*sqs.SendMessageOutput, error) {
+		//Placing the NopCloser inside as EACH time the GetDoFunc is called the reader will be 'drained'
+		return &sqs.SendMessageOutput{}, nil
 	}
 
 	var testEvent = events.CloudWatchEvent{
