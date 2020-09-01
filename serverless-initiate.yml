@@ -19,12 +19,15 @@ frameworkVersion: '>=1.28.0 <2.0.0'
 # across modules
 custom:
   snsTopic: arn:aws:sns:us-east-1:${env:AWS_ACCOUNT}:FloridaKeysTableUpdate
+  projectName: ConchRepublic
 
 provider:
   tracing:
     apiGateway: true
     lambda: true
   name: aws
+  tags:
+    PROJECT_NAME: ${self:custom.projectName}
   runtime: go1.x
   # Set the default stage used. Default is dev
   stage: "dev"
