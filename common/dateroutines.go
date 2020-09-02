@@ -1,8 +1,6 @@
 package common
 
 import (
-	"fmt"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -19,16 +17,10 @@ func CalcLongEpochFromEndDate(year, month, day int) int64 {
 
 }
 
-func CalcSearchYYYYMMFromDate(month string) string {
-
-	monthIncrement, err := strconv.Atoi(month)
-	if err != nil {
-		fmt.Println("calcSearchYYYYMMFromDate: Could not convert month to YYYYMM date")
-		monthIncrement = 1
-	}
+func CalcSearchYYYYMMFromDate(month int) (string) {
 
 	dateToday := time.Date(time.Now().Year(), time.Now().Month(), 01, 0, 0, 0, 0, time.Local)
-	dateToFetch := dateToday.AddDate(0, monthIncrement-1, 0).String()
+	dateToFetch := dateToday.AddDate(0, month-1, 0).String()
 	dateValues := strings.SplitN(dateToFetch, "-", 3)
 	return dateValues[0] + dateValues[1]
 

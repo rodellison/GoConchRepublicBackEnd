@@ -31,7 +31,7 @@ const LISTING_DATE = ".listing-date"
 const LISTING_NAME = ".listing-name"
 const LISTING_PHONE = ".listing-phone"
 
-func (ed *Eventdata) ExtractEventData(i int, s *goquery.Selection) (err error) {
+func (ed *Eventdata) ExtractEventData(s *goquery.Selection) (err error) {
 	// Load the HTML document
 
 	var iQuery *goquery.Selection
@@ -61,8 +61,16 @@ func (ed *Eventdata) ExtractEventData(i int, s *goquery.Selection) (err error) {
 
 	iQuery = s.Find(LISTING_NAME)
 	if iQuery.Nodes != nil {
-		ed.EventURL = iQuery.Nodes[0].FirstChild.Attr[1].Val
-		ed.EventName = iQuery.Nodes[0].FirstChild.FirstChild.Data
+
+		if iQuery.Nodes[0].FirstChild.Attr != nil {
+			ed.EventURL = iQuery.Nodes[0].FirstChild.Attr[1].Val
+			ed.EventName = iQuery.Nodes[0].FirstChild.FirstChild.Data
+		} else
+		{
+			ed.EventURL = ""
+			ed.EventName = iQuery.Nodes[0].FirstChild.Data
+		}
+
 	}
 
 	iQuery = s.Find(LISTING_DESCRIPTION)

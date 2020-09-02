@@ -10,15 +10,11 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-xray-sdk-go/xray"
 	"github.com/rodellison/GoConchRepublicBackEnd/common"
-	"log"
 	"os"
 	"strconv"
+	"sync"
 	"sync/atomic"
 )
-
-type EventDetail struct {
-	Month string
-}
 
 var (
 	itemCount uint64
@@ -26,31 +22,29 @@ var (
 
 type Response events.APIGatewayProxyResponse
 
-func Handler(ctx aws.Context, theEvent *events.CloudWatchEvent) (Response, error) {
+func Handler(ctx aws.Context) (Response, error) {
 	xray.Configure(xray.Config{LogLevel: "trace"})
 
-	fmt.Println("ConchRepublic Fetch invoked ")
-
-	var thisEventsDetail EventDetail
-	err := json.Unmarshal(theEvent.Detail, &thisEventsDetail)
-	if err != nil {
-		log.Println(err)
-	}
-	fmt.Println("Event detail:", thisEventsDetail.Month)
+	fmt.Println("ConchRepublic Initiate Fetch invoked ")
 
 	chFinished := make(chan bool)
 	defer func() {
 		close(chFinished)
 	}()
 
-	go fetch(ctx, thisEventsDetail.Month, chFinished)
+	if err := common.PublishSNSMessage(ctx, os.Getenv("SNS_TOPIC"), "Conch Republic Initiate Fetch", "Conch Republic Backend process initiated."); err != nil {
+		fmt.Println("Error sending SNS message: ", err.Error())
+		return responseHandler(false)
+	}
+
+	go fetch(ctx, chFinished)
 
 	// Subscribe to both channels
 	select {
 	case value := <-chFinished:
 		//Its possible that the fetch of data or extraction of data fetched did not occur successfully
 		if value != true {
-			fmt.Println("Returned Error")
+			fmt.Println("Did NOT return successfully. Check errors above.")
 			return responseHandler(false)
 		} else {
 			fmt.Println("Returned Successfully. Items processed: " + strconv.FormatUint(itemCount, 10))
@@ -59,71 +53,83 @@ func Handler(ctx aws.Context, theEvent *events.CloudWatchEvent) (Response, error
 	}
 }
 
-func fetch(ctx aws.Context, month string, chFinished chan bool) {
+func fetch(ctx aws.Context, chFinished chan bool) {
 	itemCount = 0
 
-	fullURL := os.Getenv("URLBASE") + os.Getenv("URLBASE2") + common.CalcSearchYYYYMMFromDate(month)
-	fmt.Println(fullURL)
-	//Use this to provide a return value to pass back through the channel once this routine is finished.
-	//Default it to True, and return false only if any critical errors occur that should not allow us to proceed
-	//to downstream processing
-	returnValue := true
+	var wg sync.WaitGroup
+	returnVal := true
 
-	resp, err := common.GetURLWithContext(ctx, fullURL)
-//	resp, err := common.GetURL(fullURL)
-	if err != nil || resp.StatusCode != 200 {
-		//This is critical, return immediately and don't try to process anything further
-		fmt.Println("ERROR: Failed to fetch:", fullURL)
-		resp.Body.Close()
-		chFinished <- false
-	} else {
-		defer func() {
-			resp.Body.Close() // close Body when the function completes
-			// Notify that we're done after this function
-			chFinished <- returnValue
-		}()
+	for monthVal := 1; monthVal <= 12; monthVal++ {
+		wg.Add(1)
 
-		doc, err := goquery.NewDocumentFromReader(resp.Body)
-		if err != nil {
-			fmt.Println("ERROR: Failed to get HTML from response body:", err.Error())
-			returnValue = false
-		}
-
-		//	events := make(map[string]eventdata, 100)
-		//Calendar entries will have one of these main listing block constants, depending on whether they
-		//contain an image vs not contain image
-
-		doc.Find(common.LISTING_BLOCK).Each(func(i int, s *goquery.Selection) {
-			evdata := &common.Eventdata{" ", " ", " ", " ", " ", " ", " ", " ", " ", 0}
-			err := evdata.ExtractEventData(i, s)
-			if err != nil {
-				//There can be many events, let the error go, print it, but move on to the next item
-				fmt.Println("error caught extracting event detail: " + err.Error())
-			} else {
-				//Setup the event's expiry value - int64 epoch value that DynamoDB can use for automated record removal
-				expYYYY, _ := strconv.Atoi(evdata.EndDate[0:4])
-				expMM, _ := strconv.Atoi(evdata.EndDate[4:6])
-				expDD, _ := strconv.Atoi(evdata.EndDate[6:8])
-				evdata.EventExpiry = common.CalcLongEpochFromEndDate(expYYYY, expMM, expDD)
-
-				detailStr, err := json.Marshal(evdata)
-				if err != nil {
-					//There can be many events, let the error go, print it, but move on to the next item
-					fmt.Println("error caught extracting event detail: " + err.Error())
+		go func(wg *sync.WaitGroup, month int) {
+			fullURL := os.Getenv("URLBASE") + os.Getenv("URLBASE2") + common.CalcSearchYYYYMMFromDate(month)
+			fmt.Println("Attempting to Fetch URL: " + fullURL)
+			resp, err := common.GetURLWithContext(ctx, fullURL)
+			if err != nil || resp.StatusCode != 200 {
+				//This is critical, return immediately and don't try to process anything further
+				if err == nil {
+					fmt.Println("ERROR: Failed to fetch URL:" + fullURL + ", Response code: " + strconv.Itoa(resp.StatusCode))
 				} else {
-					//Send an SQS Message with the Event Details so the Database module that will run later can poll/insert it.
-					_, err := common.SendSQSMessage(ctx, string(detailStr))
-					if err != nil {
-						fmt.Println("Error sending SQS message: ", err.Error())
-					} else {
-						atomic.AddUint64(&itemCount, 1)
-					}
-
+					fmt.Println("ERROR: Failed to fetch URL:" + fullURL + ", Response code: " + strconv.Itoa(resp.StatusCode) + ", Error: " + err.Error())
 				}
 
+				resp.Body.Close()
+				returnVal = false
+				wg.Done()
+			} else {
+				defer func() {
+					resp.Body.Close() // close Body when the function completes
+					// Notify that we're done after this function
+					wg.Done()
+				}()
+
+				doc, err := goquery.NewDocumentFromReader(resp.Body)
+				if err != nil {
+					fmt.Println("ERROR: Failed to get HTML from response body:", err.Error())
+					returnVal = false
+				} else {
+					doc.Find(common.LISTING_BLOCK).Each(func(i int, s *goquery.Selection) {
+						evdata := &common.Eventdata{" ", " ", " ", " ", " ", " ", " ", " ", " ", 0}
+						err := evdata.ExtractEventData(s)
+						if err != nil {
+							//There can be many events, let the error go, print it, but move on to the next item
+							fmt.Println("Error caught extracting event detail: " + err.Error())
+							//chFinished <- false
+						} else {
+							//Setup the event's expiry value - int64 epoch value that DynamoDB can use for automated record removal
+							expYYYY, _ := strconv.Atoi(evdata.EndDate[0:4])
+							expMM, _ := strconv.Atoi(evdata.EndDate[4:6])
+							expDD, _ := strconv.Atoi(evdata.EndDate[6:8])
+							evdata.EventExpiry = common.CalcLongEpochFromEndDate(expYYYY, expMM, expDD)
+
+							detailStr, err := json.Marshal(evdata)
+							if err != nil {
+								//There can be many events, let the error go, print it, but move on to the next item
+								fmt.Println("Error caught extracting event detail: " + err.Error())
+								//chFinished <- false
+							} else {
+								//Send an SQS Message with the Event Details so the Database module that will run later can poll/insert it.
+								//End if an error occurs as an AWS service issue is something we want to know
+								_, err := common.SendSQSMessage(ctx, string(detailStr))
+								if err != nil {
+									fmt.Println("Error sending SQS message: ", err.Error())
+									returnVal = false
+								} else {
+									atomic.AddUint64(&itemCount, 1)
+								}
+							}
+
+						}
+					})
+				}
 			}
-		})
+
+		} (&wg, monthVal)
 	}
+	wg.Wait()
+	chFinished <- returnVal
+
 }
 
 func responseHandler(success bool) (Response, error) {

@@ -5,7 +5,7 @@
 # For full config options, check the docs:
 # https://www.serverless.com/framework/docs/providers/aws/guide/serverless.yml/
 
-service: goconchrepublic-initiate
+service: goconchrepublic
 # app and org for use with dashboard.serverless.com
 #app: your-app-name
 #org: your-org-name
@@ -18,8 +18,12 @@ frameworkVersion: '>=1.28.0 <2.0.0'
 # A custom variables section for centralizing things (e.g. Environmental Variables, etc.) that need to be referenced
 # across modules
 custom:
-  snsTopic: arn:aws:sns:us-east-1:${env:AWS_ACCOUNT}:FloridaKeysTableUpdate
   projectName: ConchRepublic
+  sqsTopic: https://sqs.us-east-1.amazonaws.com/${env:AWS_ACCOUNT}/FloridaKeysDBInsert
+  snsTopic: arn:aws:sns:us-east-1:${env:AWS_ACCOUNT}:FloridaKeysTableUpdate
+  urlBase1: "https://fla-keys.com"
+  urlBase2: "/calendar/all/florida-keys/"
+  dynamoDBTable: "FloridaKeysEventsTest"
 
 provider:
   tracing:
@@ -38,11 +42,21 @@ provider:
   logRetentionInDays: 30 # Set the default RetentionInDays for a CloudWatch LogGroup
   versionFunctions: false  #if each different deploy needs to be long term retained, then set to true
   # you can ADD statements to the Lambda function's IAM Role (iamRoleStatements) here
+  memorySize: 512 # will be inherited by all functions
   iamRoleStatements:
     - Effect: "Allow"
       Action:
-        - "events:PutEvents"
-      Resource: arn:aws:events:us-east-1:${env:AWS_ACCOUNT}:event-bus/conchrepublic
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource:   arn:aws:dynamodb:us-east-1:${env:AWS_ACCOUNT}:table/FloridaKeys*
+    - Effect: "Allow"
+      Action:
+        - "sqs:*"
+      Resource: arn:aws:sqs:us-east-1:${env:AWS_ACCOUNT}:FloridaKeys*
     - Effect: "Allow"
       Action:
         - "sns:Publish"
@@ -62,19 +76,33 @@ package:
   exclude:
     - ./**
   include:
-    - ./bin/initiate
+    - ./bin/fetch
+    - ./bin/database
 
 functions:
-  initiate:
-    handler: bin/initiate
-    memorySize: 128
+  fetch:
+    handler: bin/fetch
+    timeout: 30
     # Function level environment variables
     environment:
+      URLBASE: ${self:custom.urlBase1}
+      URLBASE2: ${self:custom.urlBase2}
+      SQS_TOPIC: ${self:custom.sqsTopic}
       SNS_TOPIC: ${self:custom.snsTopic}
     events:
-      - http:
-          path: initiate
-          method: get
+      - eventBridge:
+          # You can have a separate eventBus (instead of Default) if needed
+          schedule: cron(0 22 ? * MON-FRI *) #run at 23:00 UTC time Monday through Friday
+
+  database:
+    handler: bin/database
+    timeout: 120  #note, this value can't be more than 30 seconds IF also having http event (api gateway) as part of triggers
+    # Function level environment variables
+    environment:
+      DYNAMO_DB_TABLENAME: ${self:custom.dynamoDBTable}
+      SNS_TOPIC: ${self:custom.snsTopic}
+      SQS_TOPIC: ${self:custom.sqsTopic}
+    events:
       - eventBridge:
           # You can have a separate eventBus (instead of Default) if needed
           # eventBus: 'arn:aws:events:us-east-1:619676567607:event-bus/conchrepublic'
@@ -84,4 +112,4 @@ functions:
           #NOTE!! schedule ONLY works as a rule on the default event bus
           #NOTE!! cron time uses UTC time, which may be different than your time, so adjust HOUR parm accordingly
           #so job kicks off at the right time (local time)
-          schedule: cron(0 22 ? * MON-FRI *) #run at 23:00 UTC time Monday through Friday
+          schedule: cron(0/10 22-23 ? * MON-FRI *)   #run Mon-Fri starting at 22:10 UTC

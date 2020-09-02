@@ -30,7 +30,7 @@ var (
 func init() {
 	//IF we're running a test, we'll swap this variable's value to use a mock instead, but when not
 	//testing, the value will be preset to ensure that it uses the 'real' httpClient interface
-	ctxClient =  xray.Client(&http.Client{})
+    ctxClient =  xray.Client(&http.Client{})
 	TheHTTPClient = ctxClient
 	DoHTTPWithCTX = ctxhttp.Do
 

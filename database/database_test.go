@@ -32,7 +32,7 @@ func init() {
 	common.DynamoDBSvcClient = dynamodb.New(sess, &cfg) //use this one for actual dB interaction - test or prod
 	//	common.DynamoDBSvcClient = &mocks.MockDynamoDBSvcClient{}
 	common.SNSIfaceClient = &mocks.MockSNSSvcClient{}
-	//	common.SQSIfaceClient = &mocks.MockSQSSvcClient{}
+	common.SQSIfaceClient = &mocks.MockSQSSvcClient{}
 
 }
 
@@ -52,10 +52,10 @@ func TestHandlerCanInsertDynamoDBRequest(t *testing.T) {
 		},
 	}
 
-	//mocks.MockDoDeleteSQSMessage = func(input *sqs.DeleteMessageInput) (*sqs.DeleteMessageOutput, error) {
-	//	//Creating a mock for Delete as we don't really want to delete any items
-	//	return &sqs.DeleteMessageOutput{}, nil
-	//}
+	mocks.MockDoDeleteSQSMessage = func(input *sqs.DeleteMessageInput) (*sqs.DeleteMessageOutput, error) {
+		//Creating a mock for Delete as we don't really want to delete any items
+		return &sqs.DeleteMessageOutput{}, nil
+	}
 
 	// build mock DynamoDB put
 	//mocks.MockDynamoPutItem = func(*dynamodb.PutItemInput) (*dynamodb.PutItemOutput, error) {
