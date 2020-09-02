@@ -59,7 +59,7 @@ var (
 func init() {
 	//IMPORTANT!! - for the test to use our mocked response below, we have to make sure to set the client to
 	//be the mocked client, which will use the overridden versions of the function that makes calls
-//	common.TheHTTPClient = &mocks.MockHTTPClient{}
+	common.TheHTTPClient = &mocks.MockHTTPClient{}
 	common.EBIfaceClient = &mocks.MockEBSvcClient{}
 	common.SNSIfaceClient = &mocks.MockSNSSvcClient{}
 	common.SQSIfaceClient = &mocks.MockSQSSvcClient{}
@@ -119,7 +119,7 @@ func TestHandlerCanProcessGoodRequest(t *testing.T) {
 	}
 }
 
-/*
+
 
 func TestHandlerCanProcessBadRequest(t *testing.T) {
 
@@ -175,5 +175,3 @@ func TestHandlerCanProcessBadRequest(t *testing.T) {
 	}
 }
 
-
- */
