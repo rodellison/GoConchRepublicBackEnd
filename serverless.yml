@@ -89,10 +89,11 @@ functions:
       URLBASE2: ${self:custom.urlBase2}
       SQS_TOPIC: ${self:custom.sqsTopic}
       SNS_TOPIC: ${self:custom.snsTopic}
-    events:
-      - eventBridge:
-          # You can have a separate eventBus (instead of Default) if needed
-          schedule: cron(0 22 ? * MON-FRI *) #run at 23:00 UTC time Monday through Friday
+# Moving the launch of both Fetch and Database into an AWS Step Function, with its own CRON EventBridge launch
+#    events:
+#      - eventBridge:
+#          # You can have a separate eventBus (instead of Default) if needed
+#          schedule: cron(0 22 ? * MON-FRI *) #run at 23:00 UTC time Monday through Friday
 
   database:
     handler: bin/database
@@ -102,14 +103,15 @@ functions:
       DYNAMO_DB_TABLENAME: ${self:custom.dynamoDBTable}
       SNS_TOPIC: ${self:custom.snsTopic}
       SQS_TOPIC: ${self:custom.sqsTopic}
-    events:
-      - eventBridge:
-          # You can have a separate eventBus (instead of Default) if needed
-          # eventBus: 'arn:aws:events:us-east-1:619676567607:event-bus/conchrepublic'
-          # To have eventBridge run this function according to a schedule, or be cron kicked off, use rate or cron
-          #see https://docs.aws.amazon.com/eventbridge/latest/userguide/scheduled-events.html#cron-expressions
-          #schedule: rate(5 minutes)
-          #NOTE!! schedule ONLY works as a rule on the default event bus
-          #NOTE!! cron time uses UTC time, which may be different than your time, so adjust HOUR parm accordingly
-          #so job kicks off at the right time (local time)
-          schedule: cron(0/10 22-23 ? * MON-FRI *)   #run Mon-Fri starting at 22:10 UTC
+# Moving the launch of both Fetch and Database into an AWS Step Function, with its own CRON EventBridge launch
+#    events:
+#      - eventBridge:
+#          # You can have a separate eventBus (instead of Default) if needed
+#          # eventBus: 'arn:aws:events:us-east-1:619676567607:event-bus/conchrepublic'
+#          # To have eventBridge run this function according to a schedule, or be cron kicked off, use rate or cron
+#          #see https://docs.aws.amazon.com/eventbridge/latest/userguide/scheduled-events.html#cron-expressions
+#          #schedule: rate(5 minutes)
+#          #NOTE!! schedule ONLY works as a rule on the default event bus
+#          #NOTE!! cron time uses UTC time, which may be different than your time, so adjust HOUR parm accordingly
+#          #so job kicks off at the right time (local time)
+#          schedule: cron(0/10 22-23 ? * MON-FRI *)   #run Mon-Fri starting at 22:10 UTC

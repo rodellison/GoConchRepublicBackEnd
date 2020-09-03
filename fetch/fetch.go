@@ -1,11 +1,9 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-xray-sdk-go/xray"
@@ -20,9 +18,11 @@ var (
 	itemCount uint64
 )
 
-type Response events.APIGatewayProxyResponse
+type ResponseOutput struct {
+	Message string   `json:"message"`
+}
 
-func Handler(ctx aws.Context) (Response, error) {
+func Handler(ctx aws.Context) (ResponseOutput, error) {
 	xray.Configure(xray.Config{LogLevel: "trace"})
 
 	fmt.Println("ConchRepublic Initiate Fetch invoked ")
@@ -132,36 +132,19 @@ func fetch(ctx aws.Context, chFinished chan bool) {
 
 }
 
-func responseHandler(success bool) (Response, error) {
+func responseHandler(success bool) (ResponseOutput, error) {
 
-	var returnString string
-	if success {
-		returnString = "ConchRepublicBackend fetch responding successful!"
-	} else {
-		returnString = "ConchRepublicBackend fetch responding UNsuccessful!"
+	if !success {
+		return ResponseOutput{
+			Message: "ConchRepublicBackend fetch responding UNsuccessful!",
+		}, nil
+	} else
+	{
+		return ResponseOutput{
+			Message: "ConchRepublicBackend fetch responding successful!",
+		}, nil
 	}
 
-	body, err := json.Marshal(map[string]interface{}{
-		"message": returnString,
-	})
-	if err != nil {
-		return Response{StatusCode: 404}, err
-	}
-
-	var buf bytes.Buffer
-	json.HTMLEscape(&buf, body)
-
-	resp := Response{
-		StatusCode:      200,
-		IsBase64Encoded: false,
-		Body:            buf.String(),
-		Headers: map[string]string{
-			"Content-Type":           "application/json",
-			"X-MyCompany-Func-Reply": "fetch-handler",
-		},
-	}
-
-	return resp, nil
 }
 
 func main() {

@@ -68,7 +68,7 @@ func init() {
 
 func TestHandlerCanProcessGoodRequest(t *testing.T) {
 
-	expectedResult := "{\"message\":\"ConchRepublicBackend fetch responding successful!\"}"
+	expectedResult := "ConchRepublicBackend fetch responding successful!"
 
 	tests := []struct {
 		request context.Context
@@ -115,7 +115,7 @@ func TestHandlerCanProcessGoodRequest(t *testing.T) {
 	for _, test := range tests {
 		response, err := Handler(test.request)
 		assert.IsType(t, test.err, err)
-		assert.Equal(t, test.expect, response.Body)
+		assert.Equal(t, test.expect, response.Message)
 	}
 }
 
@@ -123,7 +123,7 @@ func TestHandlerCanProcessGoodRequest(t *testing.T) {
 
 func TestHandlerCanProcessBadRequest(t *testing.T) {
 
-	expectedResult := "{\"message\":\"ConchRepublicBackend fetch responding UNsuccessful!\"}"
+	expectedResult := "ConchRepublicBackend fetch responding UNsuccessful!"
 
 	tests := []struct {
 		request context.Context
@@ -171,7 +171,7 @@ func TestHandlerCanProcessBadRequest(t *testing.T) {
 	for _, test := range tests {
 		response, err := Handler(test.request)
 		assert.IsType(t, test.err, err)
-		assert.Equal(t, test.expect, response.Body)
+		assert.Equal(t, test.expect, response.Message)
 	}
 }
 

@@ -38,7 +38,7 @@ func init() {
 
 func TestHandlerCanInsertDynamoDBRequest(t *testing.T) {
 
-	expectedResult := "{\"message\":\"ConchRepublicBackend database processed successful!\"}"
+	expectedResult := "ConchRepublicBackend database processed successful!"
 
 	tests := []struct {
 		request aws.Context
@@ -88,7 +88,7 @@ func TestHandlerCanInsertDynamoDBRequest(t *testing.T) {
 	for _, test := range tests {
 		response, err := Handler(test.request)
 		assert.IsType(t, test.err, err)
-		assert.Equal(t, test.expect, response.Body)
+		assert.Equal(t, test.expect, response.Message)
 	}
 
 }

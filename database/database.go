@@ -1,10 +1,9 @@
 package main
 
 import (
-	"bytes"
+
 	"encoding/json"
 	"fmt"
-	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/sqs"
@@ -16,7 +15,9 @@ import (
 	"sync/atomic"
 )
 
-type Response events.APIGatewayProxyResponse
+type ResponseOutput struct {
+	Message string   `json:"message"`
+}
 
 type sqsConsumer struct {
 	QueueURL          string
@@ -90,7 +91,7 @@ func (c *sqsConsumer) consumeAndProcess(ctx aws.Context) error {
 	return nil
 }
 
-func Handler(ctx aws.Context) (Response, error) {
+func Handler(ctx aws.Context) (ResponseOutput, error) {
 	xray.Configure(xray.Config{LogLevel: "trace"})
 	fmt.Println("ConchRepublic Database starting...")
 	success := true
@@ -116,36 +117,18 @@ func Handler(ctx aws.Context) (Response, error) {
 
 }
 
-func responseHandler(success bool) (Response, error) {
+func responseHandler(success bool) (ResponseOutput, error) {
 
-	var returnString string
-	if success {
-		returnString = "ConchRepublicBackend database processed successful!"
-	} else {
-		returnString = "ConchRepublicBackend database processed UNsuccessful!"
+	if !success {
+		return ResponseOutput{
+			Message: "ConchRepublicBackend database processed UNsuccessful!",
+		}, nil
+	} else
+	{
+		return ResponseOutput{
+			Message: "ConchRepublicBackend database processed successful!",
+		}, nil
 	}
-
-	body, err := json.Marshal(map[string]interface{}{
-		"message": returnString,
-	})
-	if err != nil {
-		return Response{StatusCode: 404}, err
-	}
-
-	var buf bytes.Buffer
-	json.HTMLEscape(&buf, body)
-
-	resp := Response{
-		StatusCode:      200,
-		IsBase64Encoded: false,
-		Body:            buf.String(),
-		Headers: map[string]string{
-			"Content-Type":           "application/json",
-			"X-MyCompany-Func-Reply": "database-handler",
-		},
-	}
-
-	return resp, nil
 }
 
 func main() {
