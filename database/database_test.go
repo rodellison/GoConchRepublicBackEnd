@@ -6,7 +6,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/rodellison/GoConchRepublicBackEnd/common"
 	"github.com/rodellison/GoConchRepublicBackEnd/mocks"
@@ -31,7 +30,7 @@ func init() {
 
 	common.DynamoDBSvcClient = dynamodb.New(sess, &cfg) //use this one for actual dB interaction - test or prod
 	//	common.DynamoDBSvcClient = &mocks.MockDynamoDBSvcClient{}
-	common.SNSIfaceClient = &mocks.MockSNSSvcClient{}
+	//common.SNSIfaceClient = &mocks.MockSNSSvcClient{}
 	common.SQSIfaceClient = &mocks.MockSQSSvcClient{}
 
 }
@@ -68,14 +67,14 @@ func TestHandlerCanInsertDynamoDBRequest(t *testing.T) {
 	//	}, nil
 	//}
 
-	mocks.MockDoSNSPublish = func(input *sns.PublishInput) (*sns.PublishOutput, error) {
-		fmt.Println("Mock SNS Publish called with info: " + *input.Message)
-		return &sns.PublishOutput{}, nil
-	}
-	mocks.MockDoSNSPublishWithContext = func(ctx aws.Context, input *sns.PublishInput, options ...request.Option) (*sns.PublishOutput, error) {
-		fmt.Println("Mock SNS PublishWithContext called with info: " + *input.Message)
-		return &sns.PublishOutput{}, nil
-	}
+	//mocks.MockDoSNSPublish = func(input *sns.PublishInput) (*sns.PublishOutput, error) {
+	//	fmt.Println("Mock SNS Publish called with info: " + *input.Message)
+	//	return &sns.PublishOutput{}, nil
+	//}
+	//mocks.MockDoSNSPublishWithContext = func(ctx aws.Context, input *sns.PublishInput, options ...request.Option) (*sns.PublishOutput, error) {
+	//	fmt.Println("Mock SNS PublishWithContext called with info: " + *input.Message)
+	//	return &sns.PublishOutput{}, nil
+	//}
 	mocks.MockDoReceiveSQSMessageWithContext = func(ctx aws.Context, input *sqs.ReceiveMessageInput, options ...request.Option) (*sqs.ReceiveMessageOutput, error) {
 		fmt.Println("Mock SQS ReceiveMessageWithontext called with info: ")
 		return &sqs.ReceiveMessageOutput{Messages: nil}, nil
@@ -88,7 +87,7 @@ func TestHandlerCanInsertDynamoDBRequest(t *testing.T) {
 	for _, test := range tests {
 		response, err := Handler(test.request)
 		assert.IsType(t, test.err, err)
-		assert.Equal(t, test.expect, response.Message)
+		assert.Contains(t, response.Message, test.expect )
 	}
 
 }

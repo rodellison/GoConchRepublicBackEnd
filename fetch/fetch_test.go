@@ -3,10 +3,8 @@ package main
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/rodellison/GoConchRepublicBackEnd/common"
 	"github.com/rodellison/GoConchRepublicBackEnd/mocks"
@@ -60,8 +58,8 @@ func init() {
 	//IMPORTANT!! - for the test to use our mocked response below, we have to make sure to set the client to
 	//be the mocked client, which will use the overridden versions of the function that makes calls
 	common.TheHTTPClient = &mocks.MockHTTPClient{}
-	common.EBIfaceClient = &mocks.MockEBSvcClient{}
-	common.SNSIfaceClient = &mocks.MockSNSSvcClient{}
+	//common.EBIfaceClient = &mocks.MockEBSvcClient{}
+	//common.SNSIfaceClient = &mocks.MockSNSSvcClient{}
 	common.SQSIfaceClient = &mocks.MockSQSSvcClient{}
 
 }
@@ -93,10 +91,10 @@ func TestHandlerCanProcessGoodRequest(t *testing.T) {
 		}, nil
 	}
 
-	mocks.MockDoSNSPublishWithContext = func(ctx aws.Context, input *sns.PublishInput, options ...request.Option) (*sns.PublishOutput, error) {
-		fmt.Println("Mock SNS Publish called")
-		return &sns.PublishOutput{}, nil
-	}
+	//mocks.MockDoSNSPublishWithContext = func(ctx aws.Context, input *sns.PublishInput, options ...request.Option) (*sns.PublishOutput, error) {
+	//	fmt.Println("Mock SNS Publish called")
+	//	return &sns.PublishOutput{}, nil
+	//}
 
 	//Mock out the ctxhttp context sensitive http do function
 	common.DoHTTPWithCTX = func(ctx aws.Context, client *http.Client, req *http.Request) (*http.Response, error) {
@@ -148,10 +146,10 @@ func TestHandlerCanProcessBadRequest(t *testing.T) {
 		}, nil
 	}
 
-	mocks.MockDoSNSPublish = func(input *sns.PublishInput) (*sns.PublishOutput, error) {
-		fmt.Println("Mock SNS Publish called")
-		return &sns.PublishOutput{}, nil
-	}
+	//mocks.MockDoSNSPublish = func(input *sns.PublishInput) (*sns.PublishOutput, error) {
+	//	fmt.Println("Mock SNS Publish called")
+	//	return &sns.PublishOutput{}, nil
+	//}
 
 	//Mock out the ctxhttp context sensitive http do function
 	common.DoHTTPWithCTX = func(ctx aws.Context, client *http.Client, req *http.Request) (*http.Response, error) {

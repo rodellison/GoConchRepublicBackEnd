@@ -94,41 +94,29 @@ func (c *sqsConsumer) consumeAndProcess(ctx aws.Context) error {
 func Handler(ctx aws.Context) (ResponseOutput, error) {
 	xray.Configure(xray.Config{LogLevel: "trace"})
 	fmt.Println("ConchRepublic Database starting...")
-	success := true
 
 	//This calls the main process to process SQS messages and perform a DB insert for each message/item received
 	err := mySQSConsumer.consumeAndProcess(ctx)
 	if err != nil {
 		fmt.Println("Error receiving messagage from SQS: " + err.Error())
-		success = false
+		return responseHandler(false, "ConchRepublicBackend database processed UNsuccessful!")
 	} else {
 		if itemCount > 0 {
-			snsBody := "Conch Republic Backend process completed. Count of items processed: " + strconv.FormatUint(itemCount, 10)
-			fmt.Println(snsBody)
-			err := common.PublishSNSMessage(ctx, os.Getenv("SNS_TOPIC"), "Conch Republic Database", snsBody)
-			if err != nil {
-				fmt.Println("Error sending SNS message: ", err.Error())
-			}
+			return responseHandler(true, "ConchRepublicBackend database processed successful! Count of items processed: " + strconv.FormatUint(itemCount, 10))
+		} else {
+			return responseHandler(true, "ConchRepublicBackend database processed successful! There were no items to process.")
 		}
 	}
-
-	fmt.Println("ConchRepublic database processing completed.")
-	return responseHandler(success)
-
 }
 
-func responseHandler(success bool) (ResponseOutput, error) {
+func responseHandler(success bool, message string) (ResponseOutput, error) {
 
-	if !success {
-		return ResponseOutput{
-			Message: "ConchRepublicBackend database processed UNsuccessful!",
-		}, nil
-	} else
-	{
-		return ResponseOutput{
-			Message: "ConchRepublicBackend database processed successful!",
-		}, nil
-	}
+	fmt.Println("ConchRepublic database processing completed.")
+	return ResponseOutput{
+		Message: message,
+	}, nil
+
+
 }
 
 func main() {

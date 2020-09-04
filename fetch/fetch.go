@@ -32,11 +32,6 @@ func Handler(ctx aws.Context) (ResponseOutput, error) {
 		close(chFinished)
 	}()
 
-	if err := common.PublishSNSMessage(ctx, os.Getenv("SNS_TOPIC"), "Conch Republic Initiate Fetch", "Conch Republic Backend process initiated."); err != nil {
-		fmt.Println("Error sending SNS message: ", err.Error())
-		return responseHandler(false)
-	}
-
 	go fetch(ctx, chFinished)
 
 	// Subscribe to both channels
