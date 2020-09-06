@@ -40,7 +40,7 @@ var (
 		"<li class=\"listing-info\">" +
 		"<span class=\"listing-date\"><span class=\"fa fa-fw fa-calendar\"></span>Jun 2, 2020 - Jun 6, 2020</span>" +
 		"<span class=\"listing-location\"><a href=\"/calendar/islamorada/\">" +
-		"<span class=\"fa fa-fw fa-map-marker\"></span>Location: Islamorada</a></span>" +
+		"<span class=\"fa fa-fw fa-map-marker\"></span>Location: The Lower Keys</a></span>" +
 		"<span class=\"listing-type\"><a href=\"/calendar/fishing/\">" +
 		"<span class=\"fa fa-fw fa-tags\"></span>Category: Fishing</a></span></li>" +
 		"<li class=\"listing-name\"><a rel=\"nofollow\" href=\"https://guidestrustfoundation.org/\" target=\"_blank\" title=\"View website\">46th Annual Don Hawley Tarpon Fly Tournament</a></li>" +

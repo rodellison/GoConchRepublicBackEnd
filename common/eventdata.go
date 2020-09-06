@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
-	"os"
 	"strings"
 )
 
@@ -30,6 +29,21 @@ const LISTING_LOCATION = ".listing-location"
 const LISTING_DATE = ".listing-date"
 const LISTING_NAME = ".listing-name"
 const LISTING_PHONE = ".listing-phone"
+
+func makeSSMLCompatible(descriptionText string) (string) {
+
+	returnText := descriptionText
+	returnText = strings.ReplaceAll(returnText, "& ", "and ")
+	returnText = strings.ReplaceAll(returnText, "&nbsp;", " ")
+	returnText = strings.ReplaceAll(returnText, "<a href=\"", " ")
+	returnText = strings.ReplaceAll(returnText, "\">", " ")
+	returnText = strings.ReplaceAll(returnText, "here</a>", " ")
+	returnText = strings.ReplaceAll(returnText, "</a>", " ")
+
+	return returnText;
+
+}
+
 
 func (ed *Eventdata) ExtractEventData(s *goquery.Selection) (err error) {
 	// Load the HTML document
@@ -62,20 +76,19 @@ func (ed *Eventdata) ExtractEventData(s *goquery.Selection) (err error) {
 	iQuery = s.Find(LISTING_NAME)
 	if iQuery.Nodes != nil {
 
-		if iQuery.Nodes[0].FirstChild.Attr != nil {
+		if iQuery.Nodes[0].FirstChild.Data == "a"  {    //This entry has an EventURL
 			ed.EventURL = iQuery.Nodes[0].FirstChild.Attr[1].Val
-			ed.EventName = iQuery.Nodes[0].FirstChild.FirstChild.Data
-		} else
-		{
-			ed.EventURL = ""
-			ed.EventName = iQuery.Nodes[0].FirstChild.Data
+			ed.EventName = makeSSMLCompatible(iQuery.Nodes[0].FirstChild.FirstChild.Data)
+		} else {   //This entry does NOT have an EventURL
+			ed.EventURL = " "  //Place a space in EventURL so DynamoDB doesn't null the value
+			ed.EventName = makeSSMLCompatible(iQuery.Nodes[0].FirstChild.Data)
 		}
 
 	}
 
 	iQuery = s.Find(LISTING_DESCRIPTION)
 	if iQuery.Nodes != nil {
-		ed.EventDescription = iQuery.Nodes[0].FirstChild.Data
+		ed.EventDescription = makeSSMLCompatible(iQuery.Nodes[0].FirstChild.Data)
 	}
 
 	iQuery = s.Find(LISTING_PHONE)
@@ -87,14 +100,18 @@ func (ed *Eventdata) ExtractEventData(s *goquery.Selection) (err error) {
 
 	iQuery = s.Find(LISTING_IMG)
 	if iQuery.Nodes != nil {
-		ed.ImgURL = os.Getenv("URLBASE") + iQuery.Nodes[0].Attr[1].Val
+		ed.ImgURL = iQuery.Nodes[0].Attr[1].Val
 	}
 
 	iQuery = s.Find(LISTING_LOCATION)
 	if iQuery.Nodes != nil {
 		var locationData []string
 		locationData = strings.Split(iQuery.Nodes[0].LastChild.LastChild.Data, ": ")
-		ed.EventLocation = locationData[1]
+		ed.EventLocation = strings.ToLower(locationData[1])
+		ed.EventLocation = strings.Replace(ed.EventLocation, "the ", "", 1)
+		ed.EventLocation = strings.Replace(ed.EventLocation, " ", "-", 1)
+
+
 	}
 
 	return nil
