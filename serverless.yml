@@ -97,7 +97,7 @@ functions:
 
   database:
     handler: bin/database
-    timeout: 120  #note, this value can't be more than 30 seconds IF also having http event (api gateway) as part of triggers
+    timeout: 60  #note, this value can't be more than 30 seconds IF also having http event (api gateway) as part of triggers
     # Function level environment variables
     environment:
       DYNAMO_DB_TABLENAME: ${self:custom.dynamoDBTable}
