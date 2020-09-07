@@ -10,10 +10,21 @@ buildForOSX: gomodgen
 	env GOOS=darwin go build -ldflags="-s -w" -o bin/fetch fetch/fetch.go
 	env GOOS=darwin go build -ldflags="-s -w" -o bin/database database/database.go
 
+buildForWin:
+	set GO111MODULE=on
+	set GOOS=windows go build -ldflags="-s -w" -o bin\fetch fetch\fetch.go
+	set GOOS=windows go build -ldflags="-s -w" -o bin\database database\database.go
+
 clean:
 	rm -rf ./bin ./vendor Gopkg.lock
 
+cleanWin:
+	del /s  /q bin\*.*
+
 test: clean buildForOSX
+	go test -covermode count -coverprofile cover.out ./...
+
+testWin: cleanWin buildForWin
 	go test -covermode count -coverprofile cover.out ./...
 
 deploy: clean buildForAWS
