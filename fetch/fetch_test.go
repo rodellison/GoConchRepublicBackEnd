@@ -1,15 +1,12 @@
 package main
 
 import (
-	"bytes"
-	"context"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/rodellison/GoConchRepublicBackEnd/common"
 	"github.com/rodellison/GoConchRepublicBackEnd/mocks"
 	"github.com/stretchr/testify/assert"
-	"io/ioutil"
 	"net/http"
 	"testing"
 )
@@ -57,15 +54,15 @@ var (
 func init() {
 	//IMPORTANT!! - for the test to use our mocked response below, we have to make sure to set the client to
 	//be the mocked client, which will use the overridden versions of the function that makes calls
-	common.TheHTTPClient = &mocks.MockHTTPClient{}
-//	common.TheHTTPClient = &http.Client{}   //use this if testing for real data fetch, not mocked.
+//	common.TheHTTPClient = &mocks.MockHTTPClient{}
+	common.TheHTTPClient = &http.Client{}   //use this if testing for real data fetch, not mocked.
 	//common.EBIfaceClient = &mocks.MockEBSvcClient{}
 	//common.SNSIfaceClient = &mocks.MockSNSSvcClient{}
 	common.SQSIfaceClient = &mocks.MockSQSSvcClient{}
 
 }
 
-/*
+
 func TestHandlerCanProcessSingleGoodRequest(t *testing.T) {
 
 
@@ -84,30 +81,6 @@ func TestHandlerCanProcessSingleGoodRequest(t *testing.T) {
 		},
 	}
 
-	//// build response html
-	//// create a new reader with that html
-	//mocks.GetDoHTTPFunc = func(*http.Request) (*http.Response, error) {
-	//	//Placing the NopCloser inside as EACH time the GetDoFunc is called the reader will be 'drained'
-	//	r := ioutil.NopCloser(bytes.NewReader([]byte(testGoodHTML)))
-	//	return &http.Response{
-	//		StatusCode: 200,
-	//		Body:       r,
-	//	}, nil
-	//}
-	//
-	////mocks.MockDoSNSPublishWithContext = func(ctx aws.Context, input *sns.PublishInput, options ...request.Option) (*sns.PublishOutput, error) {
-	////	fmt.Println("Mock SNS Publish called")
-	////	return &sns.PublishOutput{}, nil
-	////}
-	//
-	////Mock out the ctxhttp context sensitive http do function
-	//common.DoHTTPWithCTX = func(ctx aws.Context, client *http.Client, req *http.Request) (*http.Response, error) {
-	//	r := ioutil.NopCloser(bytes.NewReader([]byte(testGoodHTML)))
-	//	return &http.Response{
-	//		StatusCode: 200,
-	//		Body:       r,
-	//	}, nil
-	//}
 
 	mocks.MockDoSendSQSMessageWithContext = func(aws.Context, *sqs.SendMessageInput, ...request.Option) (*sqs.SendMessageOutput, error) {
 		//Placing the NopCloser inside as EACH time the GetDoFunc is called the reader will be 'drained'
@@ -122,7 +95,7 @@ func TestHandlerCanProcessSingleGoodRequest(t *testing.T) {
 }
 
 
- */
+ /*
 
 func TestHandlerCanProcessGoodRequest(t *testing.T) {
 
@@ -229,5 +202,8 @@ func TestHandlerCanProcessBadRequest(t *testing.T) {
 		assert.Equal(t, test.expect, response.Message)
 	}
 }
+
+
+ */
 
 

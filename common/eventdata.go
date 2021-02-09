@@ -108,9 +108,9 @@ func (ed *Eventdata) ExtractEventData(s *goquery.Selection) (err error) {
 		var locationData []string
 		locationData = strings.Split(iQuery.Nodes[0].LastChild.LastChild.Data, ": ")
 		if (len(locationData) > 1) {
-			ed.EventLocation = strings.ToLower(locationData[1])
+			ed.EventLocation = strings.ToLower(strings.TrimLeft(locationData[1], " "))
 		} else {
-			ed.EventLocation = strings.ToLower(locationData[0])
+			ed.EventLocation = strings.ToLower(strings.TrimLeft(locationData[0], " "))
 		}
 		ed.EventLocation = strings.Replace(ed.EventLocation, "the ", "", 1)
 		ed.EventLocation = strings.Replace(ed.EventLocation, " ", "-", 1)
