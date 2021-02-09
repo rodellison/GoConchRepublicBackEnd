@@ -58,11 +58,71 @@ func init() {
 	//IMPORTANT!! - for the test to use our mocked response below, we have to make sure to set the client to
 	//be the mocked client, which will use the overridden versions of the function that makes calls
 	common.TheHTTPClient = &mocks.MockHTTPClient{}
+//	common.TheHTTPClient = &http.Client{}   //use this if testing for real data fetch, not mocked.
 	//common.EBIfaceClient = &mocks.MockEBSvcClient{}
 	//common.SNSIfaceClient = &mocks.MockSNSSvcClient{}
 	common.SQSIfaceClient = &mocks.MockSQSSvcClient{}
 
 }
+
+/*
+func TestHandlerCanProcessSingleGoodRequest(t *testing.T) {
+
+
+	//For use with non-mocked HTTP handler
+	expectedResult := "ConchRepublicBackend fetch responding successful!"
+
+	tests := []struct {
+		request aws.Context
+		expect  string
+		err     error
+	}{
+		{
+			request: nil,
+			expect:  expectedResult,
+			err:     nil,
+		},
+	}
+
+	//// build response html
+	//// create a new reader with that html
+	//mocks.GetDoHTTPFunc = func(*http.Request) (*http.Response, error) {
+	//	//Placing the NopCloser inside as EACH time the GetDoFunc is called the reader will be 'drained'
+	//	r := ioutil.NopCloser(bytes.NewReader([]byte(testGoodHTML)))
+	//	return &http.Response{
+	//		StatusCode: 200,
+	//		Body:       r,
+	//	}, nil
+	//}
+	//
+	////mocks.MockDoSNSPublishWithContext = func(ctx aws.Context, input *sns.PublishInput, options ...request.Option) (*sns.PublishOutput, error) {
+	////	fmt.Println("Mock SNS Publish called")
+	////	return &sns.PublishOutput{}, nil
+	////}
+	//
+	////Mock out the ctxhttp context sensitive http do function
+	//common.DoHTTPWithCTX = func(ctx aws.Context, client *http.Client, req *http.Request) (*http.Response, error) {
+	//	r := ioutil.NopCloser(bytes.NewReader([]byte(testGoodHTML)))
+	//	return &http.Response{
+	//		StatusCode: 200,
+	//		Body:       r,
+	//	}, nil
+	//}
+
+	mocks.MockDoSendSQSMessageWithContext = func(aws.Context, *sqs.SendMessageInput, ...request.Option) (*sqs.SendMessageOutput, error) {
+		//Placing the NopCloser inside as EACH time the GetDoFunc is called the reader will be 'drained'
+		return &sqs.SendMessageOutput{}, nil
+	}
+
+	for _, test := range tests {
+		response, err := Handler(test.request)
+		assert.IsType(t, test.err, err)
+		assert.Equal(t, test.expect, response.Message)
+	}
+}
+
+
+ */
 
 func TestHandlerCanProcessGoodRequest(t *testing.T) {
 
@@ -116,9 +176,6 @@ func TestHandlerCanProcessGoodRequest(t *testing.T) {
 		assert.Equal(t, test.expect, response.Message)
 	}
 }
-
-
-
 func TestHandlerCanProcessBadRequest(t *testing.T) {
 
 	expectedResult := "ConchRepublicBackend fetch responding UNsuccessful!"
@@ -172,4 +229,5 @@ func TestHandlerCanProcessBadRequest(t *testing.T) {
 		assert.Equal(t, test.expect, response.Message)
 	}
 }
+
 

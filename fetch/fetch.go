@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
@@ -8,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-xray-sdk-go/xray"
 	"github.com/rodellison/GoConchRepublicBackEnd/common"
+	"net/http"
 	"os"
 	"strconv"
 	"sync"
@@ -48,19 +50,27 @@ func Handler(ctx aws.Context) (ResponseOutput, error) {
 	}
 }
 
-func fetch(ctx aws.Context, chFinished chan bool) {
+func fetch(ctx context.Context, chFinished chan bool) {
 	itemCount = 0
 
 	var wg sync.WaitGroup
 	returnVal := true
 
+//	for monthVal := 1; monthVal <= 1; monthVal++ {
 	for monthVal := 1; monthVal <= 12; monthVal++ {
 		wg.Add(1)
 
 		go func(wg *sync.WaitGroup, month int) {
 			fullURL := os.Getenv("URLBASE") + os.Getenv("URLBASE2") + common.CalcSearchYYYYMMFromDate(month)
 			fmt.Println("Attempting to Fetch URL: " + fullURL)
-			resp, err := common.GetURLWithContext(ctx, fullURL)
+			var resp *http.Response
+			var err error
+			if ctx != nil {
+				resp, err = common.GetURLWithContext(ctx, fullURL)
+			} else {
+				resp, err = common.GetURL(fullURL)
+			}
+
 			if err != nil || resp.StatusCode != 200 {
 				//This is critical, return immediately and don't try to process anything further
 				if err == nil {
@@ -130,11 +140,12 @@ func fetch(ctx aws.Context, chFinished chan bool) {
 func responseHandler(success bool) (ResponseOutput, error) {
 
 	if !success {
+		fmt.Println("ConchRepublicBackend fetch responding UNsuccessful!")
 		return ResponseOutput{
 			Message: "ConchRepublicBackend fetch responding UNsuccessful!",
 		}, nil
-	} else
-	{
+	} else	{
+		fmt.Println("ConchRepublicBackend fetch responding successful!")
 		return ResponseOutput{
 			Message: "ConchRepublicBackend fetch responding successful!",
 		}, nil
