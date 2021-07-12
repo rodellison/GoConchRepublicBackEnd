@@ -30,7 +30,7 @@ const LISTING_DATE = ".listing-date"
 const LISTING_NAME = ".listing-name"
 const LISTING_PHONE = ".listing-phone"
 
-func makeSSMLCompatible(descriptionText string) (string) {
+func makeSSMLCompatible(descriptionText string) string {
 
 	returnText := descriptionText
 	returnText = strings.ReplaceAll(returnText, "& ", "and ")
@@ -40,10 +40,9 @@ func makeSSMLCompatible(descriptionText string) (string) {
 	returnText = strings.ReplaceAll(returnText, "here</a>", " ")
 	returnText = strings.ReplaceAll(returnText, "</a>", " ")
 
-	return returnText;
+	return returnText
 
 }
-
 
 func (ed *Eventdata) ExtractEventData(s *goquery.Selection) (err error) {
 	// Load the HTML document
@@ -76,12 +75,16 @@ func (ed *Eventdata) ExtractEventData(s *goquery.Selection) (err error) {
 	iQuery = s.Find(LISTING_NAME)
 	if iQuery.Nodes != nil {
 
-		if iQuery.Nodes[0].FirstChild.Data == "a"  {    //This entry has an EventURL
-			ed.EventURL = iQuery.Nodes[0].FirstChild.Attr[1].Val
-			ed.EventName = makeSSMLCompatible(iQuery.Nodes[0].FirstChild.FirstChild.Data)
-		} else {   //This entry does NOT have an EventURL
-			ed.EventURL = " "  //Place a space in EventURL so DynamoDB doesn't null the value
-			ed.EventName = makeSSMLCompatible(iQuery.Nodes[0].FirstChild.Data)
+		if iQuery.Nodes[0].FirstChild != nil {
+			if iQuery.Nodes[0].FirstChild.Data == "a" { //This entry has an EventURL
+				ed.EventURL = iQuery.Nodes[0].FirstChild.Attr[1].Val
+				ed.EventName = makeSSMLCompatible(iQuery.Nodes[0].FirstChild.FirstChild.Data)
+			} else { //This entry does NOT have an EventURL
+				ed.EventURL = " " //Place a space in EventURL so DynamoDB doesn't null the value
+				ed.EventName = makeSSMLCompatible(iQuery.Nodes[0].FirstChild.Data)
+			}
+		} else {
+			return errors.New("could not find valid Event Listing Name")
 		}
 
 	}
@@ -107,14 +110,13 @@ func (ed *Eventdata) ExtractEventData(s *goquery.Selection) (err error) {
 	if iQuery.Nodes != nil {
 		var locationData []string
 		locationData = strings.Split(iQuery.Nodes[0].LastChild.LastChild.Data, ": ")
-		if (len(locationData) > 1) {
+		if len(locationData) > 1 {
 			ed.EventLocation = strings.ToLower(strings.TrimLeft(locationData[1], " "))
 		} else {
 			ed.EventLocation = strings.ToLower(strings.TrimLeft(locationData[0], " "))
 		}
 		ed.EventLocation = strings.Replace(ed.EventLocation, "the ", "", 1)
 		ed.EventLocation = strings.Replace(ed.EventLocation, " ", "-", 1)
-
 
 	}
 
